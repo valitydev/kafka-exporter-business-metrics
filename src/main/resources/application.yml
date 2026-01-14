@@ -1,0 +1,56 @@
+info:
+  version: '${project.version}'
+  stage: dev
+
+server:
+  port: '${server.port}'
+
+management:
+  server:
+    port: '${management.port}'
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: '${project.name}'
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+spring:
+  application:
+    name: 'hahah'
+  output:
+    ansi:
+      enabled: always
+  kafka:
+    bootstrap-servers: localhost:9092
+    topics:
+      invoice: invoicing-events
+    streams:
+      application-id: fraud-connector
+      properties:
+        retries: 300
+        retry.backoff.ms: 1000
+        num.stream.threads: 7
+        default.api.timeout.ms: 300000
+        clean.timeout.sec: 20
+        fixed.rate.timeout.ms: 60000
+
+metrics:
+  ttl:
+    seconds: 3600
+    cleaner:
+      ms: 60000
+
