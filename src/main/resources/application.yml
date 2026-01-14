@@ -53,4 +53,3 @@ metrics:
     seconds: 3600
     cleaner:
       ms: 60000
-

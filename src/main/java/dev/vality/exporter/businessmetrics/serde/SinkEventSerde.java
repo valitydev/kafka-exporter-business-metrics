@@ -17,5 +17,3 @@ public class SinkEventSerde implements Serde<SinkEvent> {
         return new SinkEventDeserializer();
     }
 }
-
-
