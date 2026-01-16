@@ -17,8 +17,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class KafkaStreamsConfig {
 
-    private final KafkaProperties kafkaProperties;
-
     @Bean(name = KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME)
     public KafkaStreamsConfiguration streamsConfig(
             KafkaProperties kafkaProperties

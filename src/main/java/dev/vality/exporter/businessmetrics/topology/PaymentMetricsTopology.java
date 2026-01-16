@@ -4,7 +4,6 @@ import dev.vality.damsel.payment_processing.EventPayload;
 import dev.vality.exporter.businessmetrics.converter.InvoiceEventConverterHandler;
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
-import dev.vality.exporter.businessmetrics.utils.SinkEventTimestampExtractor;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import dev.vality.machinegun.eventsink.SinkEvent;
 import dev.vality.sink.common.parser.impl.MachineEventParser;

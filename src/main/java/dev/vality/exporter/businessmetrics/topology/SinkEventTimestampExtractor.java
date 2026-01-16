@@ -1,4 +1,4 @@
-package dev.vality.exporter.businessmetrics.utils;
+package dev.vality.exporter.businessmetrics.topology;
 
 import dev.vality.machinegun.eventsink.SinkEvent;
 import org.apache.kafka.clients.consumer.ConsumerRecord;

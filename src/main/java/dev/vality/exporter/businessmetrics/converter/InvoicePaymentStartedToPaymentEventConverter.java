@@ -29,7 +29,7 @@ public class InvoicePaymentStartedToPaymentEventConverter implements InvoiceEven
     }
 
     @Override
-    public boolean isConvert(InvoicePaymentChangePayload payload) {
+    public boolean isApplicable(InvoicePaymentChangePayload payload) {
         return payload.isSetInvoicePaymentStarted();
     }
 }

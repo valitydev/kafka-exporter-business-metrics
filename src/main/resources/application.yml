@@ -30,7 +30,7 @@ management:
 
 spring:
   application:
-    name: 'hahah'
+    name: "${project.name}"
   output:
     ansi:
       enabled: always
@@ -39,7 +39,7 @@ spring:
     topics:
       invoice: invoicing-events
     streams:
-      application-id: fraud-connector
+      application-id: kafka-exporter-business-metrics
       properties:
         retries: 300
         retry.backoff.ms: 1000

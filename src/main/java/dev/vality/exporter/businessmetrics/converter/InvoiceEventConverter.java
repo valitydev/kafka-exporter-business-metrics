@@ -9,6 +9,6 @@ public interface InvoiceEventConverter {
 
     PaymentEvent convert(MachineEvent machineEvent, InvoicePaymentChangePayload payload);
 
-    boolean isConvert(InvoicePaymentChangePayload payload);
+    boolean isApplicable(InvoicePaymentChangePayload payload);
 
 }

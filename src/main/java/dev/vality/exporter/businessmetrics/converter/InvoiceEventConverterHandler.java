@@ -21,7 +21,7 @@ public class InvoiceEventConverterHandler {
                 .map(change -> change.getInvoicePaymentChange().getPayload())
                 .flatMap(paymentPayload ->
                         converters.stream()
-                                .filter(c -> c.isConvert(paymentPayload))
+                                .filter(c -> c.isApplicable(paymentPayload))
                                 .map(c -> c.convert(event, paymentPayload))
                 )
                 .toList();

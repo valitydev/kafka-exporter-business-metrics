@@ -23,7 +23,7 @@ public class InvoicePaymentStatusChangedToPaymentEventConverter implements Invoi
     }
 
     @Override
-    public boolean isConvert(InvoicePaymentChangePayload payload) {
+    public boolean isApplicable(InvoicePaymentChangePayload payload) {
         return payload.isSetInvoicePaymentStatusChanged();
     }
 }
