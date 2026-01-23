@@ -5,6 +5,7 @@ import dev.vality.exporter.businessmetrics.model.Metric;
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentAggregation;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricKey;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
@@ -30,23 +31,34 @@ public class MetricsService {
 
     private static class GaugeHolder {
         final AtomicLong value;
+        final Instant createdAt;
         Instant lastUpdated;
 
         GaugeHolder(AtomicLong value) {
             this.value = value;
-            this.lastUpdated = Instant.now();
+            this.createdAt = Instant.now();
+            this.lastUpdated = this.createdAt;
         }
     }
 
     private final Map<MetricId, GaugeHolder> gauges = new ConcurrentHashMap<>();
 
-    @Value("${metrics.ttl.seconds}")
-    private long defaultTtlSeconds;
-
     public void update(PaymentMetricKey key, String duration, PaymentAggregation agg) {
         Tags tags = buildTags(key, duration);
+        log.debug(
+                "Metric Update {} tags={} count={}",
+                Metric.PAYMENTS_STATUS_COUNT.getName(),
+                tags,
+                agg.getCount()
+        );
 
         updateGauge(Metric.PAYMENTS_STATUS_COUNT.getName(), tags, agg.getCount());
+        log.debug(
+                "Metric Update {} tags={} amount={}",
+                Metric.PAYMENTS_AMOUNT.getName(),
+                tags,
+                agg.getAmount()
+        );
         updateGauge(Metric.PAYMENTS_AMOUNT.getName(), tags, agg.getAmount());
     }
 
@@ -74,6 +86,12 @@ public class MetricsService {
         holder.lastUpdated = Instant.now();
     }
 
+    @Value("${metrics.ttl.seconds}")
+    private long defaultTtlSeconds;
+
+    @Value("${metrics.ttl.min-lifetime-seconds}")
+    private long minLifetimeSeconds;
+
     @Scheduled(fixedDelayString = "${metrics.ttl.cleaner.ms}")
     public void cleanOldGauges() {
         Instant now = Instant.now();
@@ -81,7 +99,9 @@ public class MetricsService {
         gauges.entrySet().removeIf(entry -> {
             MetricId metricId = entry.getKey();
             GaugeHolder holder = entry.getValue();
-
+            if (holder.createdAt.plusSeconds(minLifetimeSeconds).isAfter(now)) {
+                return false;
+            }
             String duration = metricId.tags.stream()
                     .filter(tag -> tag.getKey().equals(CustomTag.DURATION_TAG))
                     .map(Tag::getValue)
@@ -92,7 +112,13 @@ public class MetricsService {
 
             boolean expired = holder.lastUpdated.plusSeconds(ttl).isBefore(now);
             if (expired) {
-                log.debug("Removing expired Gauge: {}, duration={}, ttl={}s", metricId, duration, ttl);
+                Meter meter = registry.find(metricId.name)
+                        .tags(metricId.tags)
+                        .meter();
+                if (meter != null) {
+                    registry.remove(meter);
+                }
+                log.debug("Removing expired Gauge: {}", metricId);
             }
             return expired;
         });
