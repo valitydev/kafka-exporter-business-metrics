@@ -41,6 +41,7 @@ spring:
     streams:
       application-id: kafka-exporter-business-metrics
       properties:
+        auto.offset.reset: latest
         retries: 300
         retry.backoff.ms: 1000
         num.stream.threads: 7
@@ -51,5 +52,6 @@ spring:
 metrics:
   ttl:
     seconds: 3600
+    min-lifetime-seconds: 120
     cleaner:
       ms: 60000
