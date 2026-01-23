@@ -118,7 +118,8 @@ public class MetricsService {
                 if (meter != null) {
                     registry.remove(meter);
                 }
-                log.debug("Removing expired Gauge: {}, duration={}, ttl={}s", metricId, duration, ttl);            }
+                log.debug("Removing expired Gauge: {}, duration={}, ttl={}s", metricId, duration, ttl);
+            }
             return expired;
         });
     }
