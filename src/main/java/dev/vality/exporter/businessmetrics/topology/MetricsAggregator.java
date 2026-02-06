@@ -1,10 +1,10 @@
 package dev.vality.exporter.businessmetrics.topology;
 
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
+import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricsStore;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentAggregation;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricKey;
-import dev.vality.exporter.businessmetrics.service.MetricsService;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.kstream.Grouped;
@@ -22,7 +22,7 @@ public class MetricsAggregator {
     private final Serde<PaymentMetricKey> paymentMetricKeySerde;
     private final Serde<PaymentAggregation> paymentAggregationSerde;
     private final Serde<PaymentEvent> paymentEventSerde;
-    private final MetricsService metricsService;
+    private final PaymentMetricsStore paymentMetricsStore;
 
     public void aggregate(
             KStream<String, PaymentEvent> stream,
@@ -38,9 +38,12 @@ public class MetricsAggregator {
                         (metricKey, paymentEvent, aggregation) -> aggregation.add(paymentEvent),
                         Materialized.with(paymentMetricKeySerde, paymentAggregationSerde))
                 .toStream()
-                .foreach((windowedMetricKey, aggregation) -> {
-                            metricsService.update(windowedMetricKey.key(), MetricsWindows.tag(window), aggregation);
-                            }
+                .foreach((windowedKey, agg) ->
+                        paymentMetricsStore.put(
+                                windowedKey.key(),
+                                MetricsWindows.tag(window),
+                                agg
+                        )
                 );
     }
 }

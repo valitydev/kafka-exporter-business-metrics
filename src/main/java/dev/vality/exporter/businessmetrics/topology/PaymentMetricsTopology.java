@@ -37,14 +37,15 @@ public class PaymentMetricsTopology {
     private String invoiceTopic;
 
     public void buildPaymentTopology(StreamsBuilder streamsBuilder) {
-        log.debug("Start building payment topology");
+        log.info("Start building payment topology");
         KStream<String, SinkEvent> source =
                 streamsBuilder.stream(
                                 invoiceTopic,
                                 Consumed.with(Serdes.String(), sinkEventSerde)
                                         .withTimestampExtractor(new SinkEventTimestampExtractor()))
                         .peek((key, value) ->
-                                log.debug("Source event received. key={}, value={}", key, value));
+                                log.info("Source event received. key={}, value={}", key, value));
+
 
         KStream<String, PaymentEvent> paymentEvents = source
                 .flatMapValues(sinkEvent -> {
