@@ -18,7 +18,7 @@ public class PaymentAggregation {
         return new PaymentAggregation(
                 this.count + 1,
                 this.amount + event.getAmount(),
-                this.lastUpdated = Instant.now()
+                this.lastUpdated = event.getCreatedAt()
         );
     }
 }
