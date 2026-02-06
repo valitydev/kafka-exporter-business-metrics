@@ -3,12 +3,12 @@ package dev.vality.exporter.businessmetrics.service;
 import dev.vality.exporter.businessmetrics.model.CustomTag;
 import dev.vality.exporter.businessmetrics.model.Metric;
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentAggregation;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricKey;
+import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricsStore;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.MultiGauge;
 import io.micrometer.core.instrument.Tags;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,74 +16,55 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class MetricsService {
+    private final PaymentMetricsStore paymentMetricsStore;
     private final MeterRegistry registry;
 
-    private record MetricId(String name, Tags tags) {
+    private MultiGauge paymentsCount;
+    private MultiGauge paymentsAmount;
+
+    @PostConstruct
+    void init() {
+        paymentsCount = MultiGauge.builder(Metric.PAYMENTS_STATUS_COUNT.getName())
+                .description(Metric.PAYMENTS_STATUS_COUNT.getDescription())
+                .register(registry);
+
+        paymentsAmount = MultiGauge.builder(Metric.PAYMENTS_AMOUNT.getName())
+                .description(Metric.PAYMENTS_AMOUNT.getDescription())
+                .register(registry);
     }
 
-    private static class GaugeHolder {
-        final AtomicLong value;
-        final Instant createdAt;
-        Instant lastUpdated;
+    @Value("${metrics.ttl.cleaner.enabled}")
+    private boolean enabledClean;
 
-        GaugeHolder(AtomicLong value) {
-            this.value = value;
-            this.createdAt = Instant.now();
-            this.lastUpdated = this.createdAt;
+    @Scheduled(fixedDelayString = "${metrics.export-ms}")
+    public void export() {
+        if (enabledClean) {
+            cleanOldMetrics();
         }
-    }
+        var rowsCount = new ArrayList<MultiGauge.Row<?>>();
+        var rowsAmount = new ArrayList<MultiGauge.Row<?>>();
 
-    private final Map<MetricId, GaugeHolder> gauges = new ConcurrentHashMap<>();
-
-    public void update(PaymentMetricKey key, String duration, PaymentAggregation agg) {
-        Tags tags = buildTags(key, duration);
-        log.debug(
-                "Metric Update {} tags={} count={}",
-                Metric.PAYMENTS_STATUS_COUNT.getName(),
-                tags,
-                agg.getCount()
-        );
-
-        updateGauge(Metric.PAYMENTS_STATUS_COUNT.getName(), tags, agg.getCount());
-        log.debug(
-                "Metric Update {} tags={} amount={}",
-                Metric.PAYMENTS_AMOUNT.getName(),
-                tags,
-                agg.getAmount()
-        );
-        updateGauge(Metric.PAYMENTS_AMOUNT.getName(), tags, agg.getAmount());
-    }
-
-    private Tags buildTags(PaymentMetricKey key, String duration) {
-        return Tags.of(
-                CustomTag.providerId(String.valueOf(key.getProviderId())),
-                CustomTag.terminalId(String.valueOf(key.getTerminalId())),
-                CustomTag.shopId(key.getShopId()),
-                CustomTag.currency(key.getCurrencyCode()),
-                CustomTag.status(key.getStatus()),
-                CustomTag.duration(duration)
-        );
-    }
-
-    private void updateGauge(String metricName, Tags tags, long value) {
-        MetricId id = new MetricId(metricName, tags);
-
-        GaugeHolder holder = gauges.computeIfAbsent(id, k -> {
-            AtomicLong atomic = new AtomicLong(0);
-            registry.gauge(metricName, tags, atomic);
-            return new GaugeHolder(atomic);
+        paymentMetricsStore.store().forEach((key, agg) -> {
+            Tags tags = getTags(key);
+            rowsCount.add(
+                    MultiGauge.Row.of(tags, agg.getCount())
+            );
+            rowsAmount.add(
+                    MultiGauge.Row.of(tags, agg.getAmount())
+            );
         });
 
-        holder.value.set(value);
-        holder.lastUpdated = Instant.now();
+        paymentsCount.register(rowsCount, true);
+        paymentsAmount.register(rowsAmount, true);
+        log.info("Metrics export: paymentMetricsStore size={}, paymentsCount rows={}, paymentsAmount rows={}",
+                paymentMetricsStore.store().size(), rowsCount.size(), rowsAmount.size());
     }
 
     @Value("${metrics.ttl.seconds}")
@@ -92,35 +73,47 @@ public class MetricsService {
     @Value("${metrics.ttl.min-lifetime-seconds}")
     private long minLifetimeSeconds;
 
-    @Scheduled(fixedDelayString = "${metrics.ttl.cleaner.ms}")
-    public void cleanOldGauges() {
+    private void cleanOldMetrics() {
         Instant now = Instant.now();
 
-        gauges.entrySet().removeIf(entry -> {
-            MetricId metricId = entry.getKey();
-            GaugeHolder holder = entry.getValue();
-            if (holder.createdAt.plusSeconds(minLifetimeSeconds).isAfter(now)) {
-                return false;
+        paymentMetricsStore.store().forEach((key, agg) -> {
+            if (agg.getLastUpdated().plusSeconds(minLifetimeSeconds).isAfter(now)) {
+                return;
             }
-            String duration = metricId.tags.stream()
-                    .filter(tag -> tag.getKey().equals(CustomTag.DURATION_TAG))
-                    .map(Tag::getValue)
-                    .findFirst()
-                    .orElse(null);
 
-            long ttl = MetricsWindows.WINDOW_TTL_SECONDS.getOrDefault(duration, defaultTtlSeconds);
+            long ttl = MetricsWindows.WINDOW_TTL_SECONDS.getOrDefault(key.window(), defaultTtlSeconds);
 
-            boolean expired = holder.lastUpdated.plusSeconds(ttl).isBefore(now);
+            boolean expired = agg.getLastUpdated().plusSeconds(ttl).isBefore(now);
             if (expired) {
-                Meter meter = registry.find(metricId.name)
-                        .tags(metricId.tags)
-                        .meter();
-                if (meter != null) {
-                    registry.remove(meter);
+                Tags tags = getTags(key);
+
+                for (String metricName : List.of(
+                        Metric.PAYMENTS_STATUS_COUNT.getName(),
+                        Metric.PAYMENTS_AMOUNT.getName())) {
+
+                    Meter meter = registry.find(metricName)
+                            .tags(tags)
+                            .meter();
+                    if (meter != null) {
+                        registry.remove(meter);
+                    }
                 }
-                log.debug("Removing expired Gauge: {}, duration={}, ttl={}s", metricId, duration, ttl);
+
+                paymentMetricsStore.remove(key);
+
+                log.info("Removed expired metric for key={} with TTL={}s", key, ttl);
             }
-            return expired;
         });
+    }
+
+    private Tags getTags(PaymentMetricsStore.MetricKey key) {
+        return Tags.of(
+                CustomTag.providerId(String.valueOf(key.providerId())),
+                CustomTag.terminalId(String.valueOf(key.terminalId())),
+                CustomTag.shopId(key.shopId()),
+                CustomTag.currency(key.currency()),
+                CustomTag.status(key.status()),
+                CustomTag.duration(key.window())
+        );
     }
 }

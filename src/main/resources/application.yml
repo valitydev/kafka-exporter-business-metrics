@@ -50,8 +50,10 @@ spring:
         fixed.rate.timeout.ms: 60000
 
 metrics:
+  export-ms: 30000
   ttl:
     seconds: 3600
     min-lifetime-seconds: 120
     cleaner:
+      enabled: false
       ms: 60000

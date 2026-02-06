@@ -3,6 +3,7 @@ package dev.vality.exporter.businessmetrics;
 import dev.vality.exporter.businessmetrics.config.TestMetricsConfig;
 import dev.vality.exporter.businessmetrics.model.Metric;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
+import dev.vality.exporter.businessmetrics.service.MetricsService;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import dev.vality.machinegun.eventsink.SinkEvent;
 import io.micrometer.core.instrument.Gauge;
@@ -44,6 +45,9 @@ class MetricsTopologyIntegrationTest {
     @Autowired
     private MeterRegistry meterRegistry;
 
+    @Autowired
+    private MetricsService metricsService;
+
     private static final String TEST_INVOICE_ID = "testInvoiceId";
 
     @BeforeEach
@@ -73,6 +77,7 @@ class MetricsTopologyIntegrationTest {
         SinkEvent sinkEvent = new SinkEvent();
         sinkEvent.setEvent(startedInvoicePaymentEvents);
         inputTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
+        metricsService.export();
         ReadOnlyKeyValueStore<String, PaymentEvent> store =
                 testDriver.getKeyValueStore("payment-started-store");
         PaymentEvent result = store.get(TEST_INVOICE_ID);
@@ -87,6 +92,7 @@ class MetricsTopologyIntegrationTest {
         MachineEvent routeInvoicePaymentEvents = getRouteChangedInvoicePaymentEvents(TEST_INVOICE_ID);
         sinkEvent.setEvent(routeInvoicePaymentEvents);
         inputTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
+        metricsService.export();
         store =
                 testDriver.getKeyValueStore("payment-route-store");
         result = store.get(TEST_INVOICE_ID);
@@ -101,6 +107,7 @@ class MetricsTopologyIntegrationTest {
         MachineEvent statusChangedPaymentEvents = getStatusChangedPaymentEvents(TEST_INVOICE_ID);
         sinkEvent.setEvent(statusChangedPaymentEvents);
         inputTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
+        metricsService.export();
 
         store =
                 testDriver.getKeyValueStore("payment-status-store");
