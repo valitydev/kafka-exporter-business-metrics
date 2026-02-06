@@ -51,13 +51,13 @@ public class MetricsService {
         var rowsCount = new ArrayList<MultiGauge.Row<?>>();
         var rowsAmount = new ArrayList<MultiGauge.Row<?>>();
 
-        paymentMetricsStore.store().forEach((key, agg) -> {
+        paymentMetricsStore.store().forEach((key, aggregation) -> {
             Tags tags = getTags(key);
             rowsCount.add(
-                    MultiGauge.Row.of(tags, agg.getCount())
+                    MultiGauge.Row.of(tags, aggregation.getCount())
             );
             rowsAmount.add(
-                    MultiGauge.Row.of(tags, agg.getAmount())
+                    MultiGauge.Row.of(tags, aggregation.getAmount())
             );
         });
 
@@ -76,14 +76,14 @@ public class MetricsService {
     private void cleanOldMetrics() {
         Instant now = Instant.now();
 
-        paymentMetricsStore.store().forEach((key, agg) -> {
-            if (agg.getLastUpdated().plusSeconds(minLifetimeSeconds).isAfter(now)) {
+        paymentMetricsStore.store().forEach((key, aggregation) -> {
+            if (aggregation.getLastUpdated().plusSeconds(minLifetimeSeconds).isAfter(now)) {
                 return;
             }
 
             long ttl = MetricsWindows.WINDOW_TTL_SECONDS.getOrDefault(key.window(), defaultTtlSeconds);
 
-            boolean expired = agg.getLastUpdated().plusSeconds(ttl).isBefore(now);
+            boolean expired = aggregation.getLastUpdated().plusSeconds(ttl).isBefore(now);
             if (expired) {
                 Tags tags = getTags(key);
 
