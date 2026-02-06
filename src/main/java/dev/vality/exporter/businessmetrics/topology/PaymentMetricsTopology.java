@@ -46,6 +46,7 @@ public class PaymentMetricsTopology {
                         .peek((key, value) ->
                                 log.info("Source event received. key={}, value={}", key, value));
 
+
         KStream<String, PaymentEvent> paymentEvents = source
                 .flatMapValues(sinkEvent -> {
                     MachineEvent machineEvent = sinkEvent.getEvent();
