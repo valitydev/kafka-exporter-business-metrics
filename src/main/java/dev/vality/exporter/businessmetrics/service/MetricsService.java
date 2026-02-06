@@ -45,6 +45,7 @@ public class MetricsService {
 
     @Scheduled(fixedDelayString = "${metrics.export-ms}")
     public void export() {
+        log.debug("Start export metrics");
         if (enabledClean) {
             cleanOldMetrics();
         }
@@ -74,6 +75,7 @@ public class MetricsService {
     private long minLifetimeSeconds;
 
     private void cleanOldMetrics() {
+        log.debug("Start clean old metrics");
         Instant now = Instant.now();
 
         paymentMetricsStore.store().forEach((key, aggregation) -> {
