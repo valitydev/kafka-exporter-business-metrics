@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -49,13 +50,23 @@ public class PaymentMetricsTopology {
 
         KStream<String, PaymentEvent> paymentEvents = source
                 .flatMapValues(sinkEvent -> {
-                    MachineEvent machineEvent = sinkEvent.getEvent();
-                    EventPayload payload = parser.parse(machineEvent);
-                    return invoiceEventConverterHandler.handle(machineEvent, payload);
-                });
+                    try {
+                        MachineEvent machineEvent = sinkEvent.getEvent();
+                        EventPayload payload = parser.parse(machineEvent);
+                        List<PaymentEvent> events = invoiceEventConverterHandler.handle(machineEvent, payload);
+                        if (events.isEmpty()) {
+                            log.debug("No payment events produced for source id={}", machineEvent.getSourceId());
+                        }
+                        return events;
+                    } catch (Exception ex) {
+                        log.warn("Skip sink event due to parsing/conversion error: {}", ex.getMessage(), ex);
+                        return List.of();
+                    }
+                })
+                .peek((invoiceId, event) ->
+                        log.trace("Payment event produced. invoiceId={}, event={}", invoiceId, event));
 
         KStream<String, PaymentEvent> payments = buildFullPayment(paymentEvents);
-
         for (Duration window : MetricsWindows.WINDOWS) {
             metricsAggregator.aggregate(payments, window);
         }
@@ -66,18 +77,27 @@ public class PaymentMetricsTopology {
         KStream<String, PaymentEvent> startedEvents = paymentEvents
                 .filter((invoiceId, event) ->
                         event.getAmount() > 0 && event.getShopId() != null
-                );
+                )
+                .peek((invoiceId, event) ->
+                        log.trace("Started event selected. invoiceId={}, amount={}, shopId={}",
+                                invoiceId, event.getAmount(), event.getShopId()));
 
         KStream<String, PaymentEvent> routeEvents = paymentEvents
                 .filter((invoiceId, event) ->
                         event.getProviderId() != 0 && event.getTerminalId() != 0
                                 && (event.getAmount() == 0 || event.getShopId() == null)
-                );
+                )
+                .peek((invoiceId, event) ->
+                        log.trace("Route event selected. invoiceId={}, providerId={}, terminalId={}",
+                                invoiceId, event.getProviderId(), event.getTerminalId()));
 
         KStream<String, PaymentEvent> statusEvents = paymentEvents
                 .filter((invoiceId, event) ->
                         event.getStatus() != null && event.getAmount() == 0
-                );
+                )
+                .peek((invoiceId, event) ->
+                        log.trace("Status event selected. invoiceId={}, status={}",
+                                invoiceId, event.getStatus()));
         KTable<String, PaymentEvent> startedTable = toKTable(startedEvents, PAYMENT_STARTED_STORE);
         KTable<String, PaymentEvent> routeTable = toKTable(routeEvents, PAYMENT_ROUTE_STORE);
         KTable<String, PaymentEvent> statusTable = toKTable(statusEvents, PAYMENT_STATUS_STORE);
@@ -85,7 +105,6 @@ public class PaymentMetricsTopology {
         KTable<String, PaymentEvent> fullPaymentTable = startedTable
                 .leftJoin(routeTable, this::mergeRoute)
                 .leftJoin(statusTable, this::mergeStatus);
-
         return fullPaymentTable.toStream()
                 .filter((invoiceId, paymentEvent) -> paymentEvent != null);
     }

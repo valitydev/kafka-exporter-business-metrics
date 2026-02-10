@@ -21,13 +21,13 @@ public class KafkaStreamsConfig {
     public KafkaStreamsConfiguration streamsConfig(
             KafkaProperties kafkaProperties
     ) {
-        Map<String, Object> props = new HashMap<>();
+        Map<String, Object> props = new HashMap<>(kafkaProperties.getStreams().getProperties());
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, kafkaProperties.getStreams().getApplicationId());
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG,
                 kafkaProperties.getBootstrapServers());
-        props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG,
+        props.putIfAbsent(StreamsConfig.PROCESSING_GUARANTEE_CONFIG,
                 StreamsConfig.EXACTLY_ONCE_V2);
-        props.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, 2);
+        props.putIfAbsent(StreamsConfig.NUM_STREAM_THREADS_CONFIG, 2);
 
         return new KafkaStreamsConfiguration(props);
     }
