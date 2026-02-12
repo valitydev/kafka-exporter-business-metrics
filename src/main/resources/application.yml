@@ -36,6 +36,7 @@ spring:
       enabled: always
   kafka:
     bootstrap-servers: localhost:9092
+    client-id: kafka-exporter-business-metrics-client
     topics:
       invoice: invoicing-events
     streams:
