@@ -31,7 +31,7 @@ public class KafkaStreamsConfig {
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG,
                 kafkaProperties.getBootstrapServers());
         props.putIfAbsent(StreamsConfig.PROCESSING_GUARANTEE_CONFIG,
-                StreamsConfig.EXACTLY_ONCE_V2);
+                StreamsConfig.AT_LEAST_ONCE);
         props.putIfAbsent(StreamsConfig.NUM_STREAM_THREADS_CONFIG, 2);
         addDefaultProperties(props);
         return new KafkaStreamsConfiguration(props);
