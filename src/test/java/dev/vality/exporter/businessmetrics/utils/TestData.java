@@ -62,9 +62,6 @@ public class TestData {
                                                                         .setVolume(new Cash(2,
                                                                                 new CurrencyRef(
                                                                                         "RUB")))))
-                                                                .setRoute(new PaymentRoute(
-                                                                        new ProviderRef(29),
-                                                                        new TerminalRef(30)))
                                                         )))
                                 )))));
     }

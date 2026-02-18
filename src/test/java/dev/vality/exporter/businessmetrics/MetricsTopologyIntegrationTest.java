@@ -100,7 +100,7 @@ class MetricsTopologyIntegrationTest {
         assertEquals(TEST_INVOICE_ID, result.getInvoiceId());
         gaugeCaptured = getGaugeCaptured();
         Assertions.assertNull(gaugeCaptured);
-        gaugePending = getGaugePending();
+        gaugePending = getGaugePendingWithRoute();
         assertNotNull(gaugePending);
         assertEquals(1.0, gaugePending.value());
 
@@ -127,8 +127,20 @@ class MetricsTopologyIntegrationTest {
         return meterRegistry
                 .find(Metric.PAYMENTS_STATUS_COUNT.getName())
                 .tags(
-                        "provider_id", "29",
-                        "terminal_id", "30",
+                        "shop_id", "test_shop_id",
+                        "currency", "RUB",
+                        "status", "pending",
+                        "duration", "5m"
+                )
+                .gauge();
+    }
+
+    private Gauge getGaugePendingWithRoute() {
+        return meterRegistry
+                .find(Metric.PAYMENTS_STATUS_COUNT.getName())
+                .tags(
+                        "provider_id", "21",
+                        "terminal_id", "35",
                         "shop_id", "test_shop_id",
                         "currency", "RUB",
                         "status", "pending",
