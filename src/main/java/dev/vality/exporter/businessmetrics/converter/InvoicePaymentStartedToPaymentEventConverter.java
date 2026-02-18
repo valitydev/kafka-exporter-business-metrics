@@ -18,8 +18,10 @@ public class InvoicePaymentStartedToPaymentEventConverter implements InvoiceEven
         var payment = invoicePaymentStarted.getPayment();
         PaymentEvent event = new PaymentEvent();
         event.setInvoiceId(machineEvent.getSourceId());
-        event.setProviderId(invoicePaymentStarted.getRoute().getProvider().getId());
-        event.setTerminalId(invoicePaymentStarted.getRoute().getTerminal().getId());
+        if (invoicePaymentStarted.isSetRoute()) {
+            event.setProviderId(invoicePaymentStarted.getRoute().getProvider().getId());
+            event.setTerminalId(invoicePaymentStarted.getRoute().getTerminal().getId());
+        }
         event.setShopId(payment.getShopRef().getId());
         event.setCurrencyCode(payment.getCost().getCurrency().getSymbolicCode());
         event.setAmount(payment.getCost().getAmount());
