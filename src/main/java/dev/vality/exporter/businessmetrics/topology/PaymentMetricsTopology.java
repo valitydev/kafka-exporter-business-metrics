@@ -45,7 +45,7 @@ public class PaymentMetricsTopology {
                                 Consumed.with(Serdes.String(), sinkEventSerde)
                                         .withTimestampExtractor(new SinkEventTimestampExtractor()))
                         .peek((key, value) ->
-                                log.info("Source event received. key={}, value={}", key, value));
+                                log.debug("Source event received. key={}, value={}", key, value));
 
 
         KStream<String, PaymentEvent> paymentEvents = source
