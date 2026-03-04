@@ -7,6 +7,7 @@ import dev.vality.exporter.businessmetrics.service.MetricsService;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import dev.vality.machinegun.eventsink.SinkEvent;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
@@ -23,11 +24,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
+import java.util.Collection;
 import java.util.Properties;
 
 import static dev.vality.exporter.businessmetrics.utils.TestData.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Import(TestMetricsConfig.class)
@@ -77,38 +78,47 @@ class MetricsTopologyIntegrationTest {
         SinkEvent sinkEvent = new SinkEvent();
         sinkEvent.setEvent(startedInvoicePaymentEvents);
         inputTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
-        metricsService.export();
+        meterRegistry.getMeters().forEach(meter -> {
+            if (meter instanceof Gauge gauge) {
+                gauge.value();
+            }
+        });
         ReadOnlyKeyValueStore<String, PaymentEvent> store =
                 testDriver.getKeyValueStore("payment-started-store");
         PaymentEvent result = store.get(TEST_INVOICE_ID);
         assertNotNull(result);
         assertEquals(TEST_INVOICE_ID, result.getInvoiceId());
         Gauge gaugeCaptured = getGaugeCaptured();
-        Assertions.assertNull(gaugeCaptured);
+        assertNull(gaugeCaptured);
         Gauge gaugePending = getGaugePending();
-        assertNotNull(gaugePending);
-        assertEquals(1.0, gaugePending.value());
+        assertNull(gaugePending);
 
         MachineEvent routeInvoicePaymentEvents = getRouteChangedInvoicePaymentEvents(TEST_INVOICE_ID);
         sinkEvent.setEvent(routeInvoicePaymentEvents);
         inputTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
-        metricsService.export();
+        meterRegistry.getMeters().forEach(meter -> {
+            if (meter instanceof Gauge gauge) {
+                gauge.value();
+            }
+        });
         store =
                 testDriver.getKeyValueStore("payment-route-store");
         result = store.get(TEST_INVOICE_ID);
         assertNotNull(result);
         assertEquals(TEST_INVOICE_ID, result.getInvoiceId());
         gaugeCaptured = getGaugeCaptured();
-        Assertions.assertNull(gaugeCaptured);
+        assertNull(gaugeCaptured);
         gaugePending = getGaugePendingWithRoute();
-        assertNotNull(gaugePending);
-        assertEquals(1.0, gaugePending.value());
+        assertNull(gaugePending);
 
         MachineEvent statusChangedPaymentEvents = getStatusChangedPaymentEvents(TEST_INVOICE_ID);
         sinkEvent.setEvent(statusChangedPaymentEvents);
         inputTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
-        metricsService.export();
-
+        meterRegistry.getMeters().forEach(meter -> {
+            if (meter instanceof Gauge gauge) {
+                gauge.value();
+            }
+        });
         store =
                 testDriver.getKeyValueStore("payment-status-store");
         result = store.get(TEST_INVOICE_ID);
@@ -118,9 +128,9 @@ class MetricsTopologyIntegrationTest {
         assertNotNull(gaugeCaptured);
         assertEquals(1.0, gaugeCaptured.value());
         gaugePending = getGaugePending();
-        assertNotNull(gaugePending);
-        assertEquals(1.0, gaugePending.value());
-
+        assertNull(gaugePending);
+        Collection<Meter> meters = getMeterCaptured();
+        assertEquals(1, meters.size());
     }
 
     private Gauge getGaugePending() {
@@ -161,6 +171,20 @@ class MetricsTopologyIntegrationTest {
                         "duration", "15m"
                 )
                 .gauge();
+    }
+
+    private Collection<Meter> getMeterCaptured() {
+        return meterRegistry
+                .find(Metric.PAYMENTS_STATUS_COUNT.getName())
+                .tags(
+                        "provider_id", "21",
+                        "terminal_id", "35",
+                        "shop_id", "test_shop_id",
+                        "currency", "RUB",
+                        "status", "captured",
+                        "duration", "15m"
+                )
+                .meters();
     }
 
 }

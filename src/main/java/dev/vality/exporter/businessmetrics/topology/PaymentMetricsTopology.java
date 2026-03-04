@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -33,6 +34,7 @@ public class PaymentMetricsTopology {
     private static final String PAYMENT_STARTED_STORE = "payment-started-store";
     private static final String PAYMENT_ROUTE_STORE = "payment-route-store";
     private static final String PAYMENT_STATUS_STORE = "payment-status-store";
+    private static final Set<String> ALLOWED_STATUSES = Set.of("captured", "failed");
 
     @Value("${spring.kafka.topics.invoice}")
     private String invoiceTopic;
@@ -106,7 +108,7 @@ public class PaymentMetricsTopology {
                 .leftJoin(routeTable, this::mergeRoute)
                 .leftJoin(statusTable, this::mergeStatus);
         return fullPaymentTable.toStream()
-                .filter((invoiceId, paymentEvent) -> paymentEvent != null);
+                .filter((invoiceId, paymentEvent) -> isFullPaymentEvent(paymentEvent));
     }
 
     private KTable<String, PaymentEvent> toKTable(
@@ -142,5 +144,16 @@ public class PaymentMetricsTopology {
             }
         }
         return event;
+    }
+
+    private static boolean isFullPaymentEvent(PaymentEvent paymentEvent) {
+        return paymentEvent != null
+                && paymentEvent.getTerminalId() != 0
+                && paymentEvent.getProviderId() != 0
+                && paymentEvent.getShopId() != null
+                && paymentEvent.getCurrencyCode() != null
+                && paymentEvent.getAmount() != 0
+                && paymentEvent.getStatus() != null
+                && ALLOWED_STATUSES.contains(paymentEvent.getStatus());
     }
 }
