@@ -78,39 +78,40 @@ public class MetricsService {
 
     @Scheduled(fixedDelayString = "${metrics.ttl.cleaner.ms}")
     private void cleanOldMetrics() {
-        if (enabledClean) {
-            log.debug("Start clean old metrics");
-            Instant now = Instant.now();
-
-            paymentMetricsStore.store().forEach((key, aggregation) -> {
-                if (aggregation.getLastUpdated().plusSeconds(minLifetimeSeconds).isAfter(now)) {
-                    return;
-                }
-
-                long ttl = MetricsWindows.WINDOW_TTL_SECONDS.getOrDefault(key.window(), defaultTtlSeconds);
-
-                boolean expired = aggregation.getLastUpdated().plusSeconds(ttl).isBefore(now);
-                if (expired) {
-                    Tags tags = getTags(key);
-
-                    for (String metricName : List.of(
-                            Metric.PAYMENTS_STATUS_COUNT.getName(),
-                            Metric.PAYMENTS_AMOUNT.getName())) {
-
-                        Meter meter = registry.find(metricName)
-                                .tags(tags)
-                                .meter();
-                        if (meter != null) {
-                            registry.remove(meter);
-                        }
-                    }
-
-                    paymentMetricsStore.remove(key);
-
-                    log.info("Removed expired metric for key={} with TTL={}s", key, ttl);
-                }
-            });
+        if (!enabledClean) {
+            return;
         }
+        log.debug("Start clean old metrics");
+        Instant now = Instant.now();
+
+        paymentMetricsStore.store().forEach((key, aggregation) -> {
+            if (aggregation.getLastUpdated().plusSeconds(minLifetimeSeconds).isAfter(now)) {
+                return;
+            }
+
+            long ttl = MetricsWindows.WINDOW_TTL_SECONDS.getOrDefault(key.window(), defaultTtlSeconds);
+
+            boolean expired = aggregation.getLastUpdated().plusSeconds(ttl).isBefore(now);
+            if (expired) {
+                Tags tags = getTags(key);
+
+                for (String metricName : List.of(
+                        Metric.PAYMENTS_STATUS_COUNT.getName(),
+                        Metric.PAYMENTS_AMOUNT.getName())) {
+
+                    Meter meter = registry.find(metricName)
+                            .tags(tags)
+                            .meter();
+                    if (meter != null) {
+                        registry.remove(meter);
+                    }
+                }
+
+                paymentMetricsStore.remove(key);
+
+                log.info("Removed expired metric for key={} with TTL={}s", key, ttl);
+            }
+        });
     }
 
     private Tags getTags(PaymentMetricsStore.MetricKey key) {
