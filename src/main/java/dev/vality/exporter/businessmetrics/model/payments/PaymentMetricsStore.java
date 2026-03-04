@@ -16,7 +16,8 @@ public class PaymentMetricsStore {
             String currency,
             String status,
             String window
-    ) {}
+    ) {
+    }
 
     private final ConcurrentMap<MetricKey, PaymentAggregation> store =
             new ConcurrentHashMap<>();
@@ -40,7 +41,7 @@ public class PaymentMetricsStore {
     }
 
     public Map<MetricKey, PaymentAggregation> store() {
-        return Map.copyOf(store);
+        return store;
     }
 
     public void remove(MetricKey key) {
