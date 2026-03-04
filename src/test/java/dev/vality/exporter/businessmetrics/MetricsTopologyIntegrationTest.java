@@ -3,7 +3,6 @@ package dev.vality.exporter.businessmetrics;
 import dev.vality.exporter.businessmetrics.config.TestMetricsConfig;
 import dev.vality.exporter.businessmetrics.model.Metric;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
-import dev.vality.exporter.businessmetrics.service.MetricsService;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import dev.vality.machinegun.eventsink.SinkEvent;
 import io.micrometer.core.instrument.Gauge;
@@ -17,7 +16,6 @@ import org.apache.kafka.streams.TestInputTopic;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,9 +43,6 @@ class MetricsTopologyIntegrationTest {
 
     @Autowired
     private MeterRegistry meterRegistry;
-
-    @Autowired
-    private MetricsService metricsService;
 
     private static final String TEST_INVOICE_ID = "testInvoiceId";
 
