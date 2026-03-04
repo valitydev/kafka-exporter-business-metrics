@@ -60,7 +60,9 @@ public class MetricsService {
             java.util.function.ToDoubleFunction<PaymentAggregation> valueExtractor
     ) {
         List<MultiGauge.Row<Number>> rows = store.entrySet().stream()
-                .map(entry -> MultiGauge.Row.of(getTags(entry.getKey()), valueExtractor.applyAsDouble(entry.getValue())))
+                .map(entry ->
+                        MultiGauge.Row.of(getTags(entry.getKey()),
+                                valueExtractor.applyAsDouble(entry.getValue())))
                 .toList();
         gauge.register(rows, true);
     }
