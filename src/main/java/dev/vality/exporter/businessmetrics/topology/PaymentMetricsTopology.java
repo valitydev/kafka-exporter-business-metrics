@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -30,7 +29,7 @@ import java.util.Set;
         havingValue = "true",
         matchIfMissing = true
 )
-public class PaymentMetricsTopology implements MetricsTopology{
+public class PaymentMetricsTopology implements MetricsTopology {
 
     private final Serde<SinkEvent> sinkEventSerde;
     private final Serde<PaymentEvent> paymentEventSerde;

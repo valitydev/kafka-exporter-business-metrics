@@ -1,8 +1,6 @@
 package dev.vality.exporter.businessmetrics.model.withdrawals;
 
 import dev.vality.exporter.businessmetrics.model.MetricsStore;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentAggregation;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricKey;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;

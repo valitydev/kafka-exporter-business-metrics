@@ -1,7 +1,6 @@
 package dev.vality.exporter.businessmetrics.model.withdrawals;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

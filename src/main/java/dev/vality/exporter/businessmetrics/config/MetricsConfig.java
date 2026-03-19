@@ -1,8 +1,8 @@
 package dev.vality.exporter.businessmetrics.config;
 
 import dev.vality.exporter.businessmetrics.config.properties.MetricsTtlProperties;
-import dev.vality.exporter.businessmetrics.model.MetricsBindingRegistry;
 import dev.vality.exporter.businessmetrics.factory.MetricsFactory;
+import dev.vality.exporter.businessmetrics.model.MetricsBindingRegistry;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricsStore;
 import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalMetricsStore;
 import dev.vality.exporter.businessmetrics.service.MetricsService;

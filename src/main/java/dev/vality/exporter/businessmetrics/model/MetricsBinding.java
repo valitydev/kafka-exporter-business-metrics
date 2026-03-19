@@ -23,4 +23,5 @@ public record MetricsBinding<K, A>(
         String countScrapeName,
         String amountScrapeName,
         List<String> metricNames
-) {}
+) {
+}

@@ -1,6 +1,5 @@
 package dev.vality.exporter.businessmetrics.model.withdrawals;
 
-import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

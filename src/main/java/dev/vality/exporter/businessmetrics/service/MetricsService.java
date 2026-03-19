@@ -1,8 +1,8 @@
 package dev.vality.exporter.businessmetrics.service;
 
+import dev.vality.exporter.businessmetrics.config.properties.MetricsTtlProperties;
 import dev.vality.exporter.businessmetrics.model.MetricsBinding;
 import dev.vality.exporter.businessmetrics.model.MetricsBindingRegistry;
-import dev.vality.exporter.businessmetrics.config.properties.MetricsTtlProperties;
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;

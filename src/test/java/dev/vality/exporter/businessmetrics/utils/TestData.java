@@ -123,9 +123,8 @@ public class TestData {
                 .setData(Value.bin(withdrawalEventPayloadSerializer.serialize(
                         new TimestampedChange()
                                 .setOccuredAt(temporalToString(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)))
-                                .setChange(new Change(Change.created(
-                                new CreatedChange().setWithdrawal(
-                                        buildWithdarwal(withdrawalId))))))));
+                                .setChange(new Change(Change.created(new CreatedChange()
+                                        .setWithdrawal(buildWithdarwal(withdrawalId))))))));
     }
 
     public static MachineEvent getRouteChangedWithdrawalEvents(String withdrawalId) {
@@ -138,8 +137,7 @@ public class TestData {
                 .setData(Value.bin(withdrawalEventPayloadSerializer.serialize(
                         new TimestampedChange()
                                 .setOccuredAt(temporalToString(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)))
-                                .setChange(new Change(Change.route(
-                                new RouteChange()
+                                .setChange(new Change(Change.route(new RouteChange()
                                         .setRoute(
                                                 new Route()
                                                         .setProviderId(1)
@@ -156,9 +154,8 @@ public class TestData {
                 .setData(Value.bin(withdrawalEventPayloadSerializer.serialize(
                         new TimestampedChange()
                                 .setOccuredAt(temporalToString(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)))
-                                .setChange(new Change(Change.status_changed(
-                                new StatusChange().setStatus(
-                                        Status.succeeded(new Succeeded()))))))));
+                                .setChange(new Change(Change.status_changed(new StatusChange()
+                                        .setStatus(Status.succeeded(new Succeeded()))))))));
     }
 
     public static Invoice buildInvoice(String invoiceId) {
