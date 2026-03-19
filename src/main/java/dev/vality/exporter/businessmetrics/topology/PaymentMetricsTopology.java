@@ -1,7 +1,7 @@
 package dev.vality.exporter.businessmetrics.topology;
 
 import dev.vality.damsel.payment_processing.EventPayload;
-import dev.vality.exporter.businessmetrics.converter.InvoiceEventConverterHandler;
+import dev.vality.exporter.businessmetrics.converter.payment.InvoiceEventConverterHandler;
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
 import dev.vality.machinegun.eventsink.MachineEvent;
@@ -14,6 +14,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -23,7 +24,13 @@ import java.util.Set;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class PaymentMetricsTopology {
+@ConditionalOnProperty(
+        prefix = "metrics.topology.payment",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true
+)
+public class PaymentMetricsTopology implements MetricsTopology{
 
     private final Serde<SinkEvent> sinkEventSerde;
     private final Serde<PaymentEvent> paymentEventSerde;
@@ -34,12 +41,11 @@ public class PaymentMetricsTopology {
     private static final String PAYMENT_STARTED_STORE = "payment-started-store";
     private static final String PAYMENT_ROUTE_STORE = "payment-route-store";
     private static final String PAYMENT_STATUS_STORE = "payment-status-store";
-    private static final Set<String> ALLOWED_STATUSES = Set.of("captured", "failed");
 
     @Value("${spring.kafka.topics.invoice}")
     private String invoiceTopic;
 
-    public void buildPaymentTopology(StreamsBuilder streamsBuilder) {
+    public void build(StreamsBuilder streamsBuilder) {
         log.info("Start building payment topology");
         KStream<String, SinkEvent> source =
                 streamsBuilder.stream(
@@ -70,8 +76,9 @@ public class PaymentMetricsTopology {
 
         KStream<String, PaymentEvent> payments = buildFullPayment(paymentEvents);
         for (Duration window : MetricsWindows.WINDOWS) {
-            metricsAggregator.aggregate(payments, window);
+            metricsAggregator.aggregatePayments(payments, window);
         }
+        metricsAggregator.aggregateTodayPayments(payments);
     }
 
     private KStream<String, PaymentEvent> buildFullPayment(KStream<String, PaymentEvent> paymentEvents) {
@@ -153,7 +160,6 @@ public class PaymentMetricsTopology {
                 && paymentEvent.getShopId() != null
                 && paymentEvent.getCurrencyCode() != null
                 && paymentEvent.getAmount() != 0
-                && paymentEvent.getStatus() != null
-                && ALLOWED_STATUSES.contains(paymentEvent.getStatus());
+                && paymentEvent.getStatus() != null;
     }
 }

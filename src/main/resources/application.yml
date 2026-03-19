@@ -39,6 +39,7 @@ spring:
     client-id: kafka-exporter-business-metrics-client
     topics:
       invoice: invoicing-events
+      withdrawal: withdrawal-events
     streams:
       application-id: kafka-exporter-business-metrics
       properties:
@@ -57,3 +58,8 @@ metrics:
     cleaner:
       enabled: false
       ms: 60000
+  topology:
+    payment:
+      enabled: true
+    withdrawal:
+      enabled: true

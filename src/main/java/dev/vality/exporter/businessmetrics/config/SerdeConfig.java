@@ -7,6 +7,9 @@ import dev.vality.damsel.payment_processing.EventPayload;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentAggregation;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricKey;
+import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalAggregation;
+import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalEvent;
+import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalMetricKey;
 import dev.vality.exporter.businessmetrics.serde.SinkEventSerde;
 import dev.vality.exporter.businessmetrics.topology.MetricsTopology;
 import dev.vality.machinegun.eventsink.SinkEvent;
@@ -14,6 +17,7 @@ import dev.vality.sink.common.parser.impl.MachineEventParser;
 import dev.vality.sink.common.parser.impl.PaymentEventPayloadMachineEventParser;
 import dev.vality.sink.common.serialization.BinaryDeserializer;
 import dev.vality.sink.common.serialization.impl.PaymentEventPayloadDeserializer;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
@@ -22,8 +26,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
+import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Configuration
 public class SerdeConfig {
 
@@ -35,14 +41,35 @@ public class SerdeConfig {
     }
 
     @Bean
+    public Serde<WithdrawalEvent> withdrawalEventSerde(ObjectMapper mapper) {
+        JsonSerde<WithdrawalEvent> serde = new JsonSerde<>(WithdrawalEvent.class, mapper);
+        serde.configure(Map.of(), false);
+        return serde;
+    }
+
+    @Bean
     public Serde<SinkEvent> sinkEventSerde() {
         return new SinkEventSerde();
+    }
+
+    @Bean
+    public Serde<WithdrawalMetricKey> withdrawalMetricKeySerde(ObjectMapper mapper) {
+        JsonSerde<WithdrawalMetricKey> serde = new JsonSerde<>(WithdrawalMetricKey.class, mapper);
+        serde.configure(Map.of(), true);
+        return serde;
     }
 
     @Bean
     public Serde<PaymentMetricKey> paymentMetricKeySerde(ObjectMapper mapper) {
         JsonSerde<PaymentMetricKey> serde = new JsonSerde<>(PaymentMetricKey.class, mapper);
         serde.configure(Map.of(), true);
+        return serde;
+    }
+
+    @Bean
+    public Serde<WithdrawalAggregation> withdrawalAggregationSerde(ObjectMapper mapper) {
+        JsonSerde<WithdrawalAggregation> serde = new JsonSerde<>(WithdrawalAggregation.class, mapper);
+        serde.configure(Map.of(), false);
         return serde;
     }
 
@@ -73,8 +100,17 @@ public class SerdeConfig {
     }
 
     @Bean
-    public Topology topology(MetricsTopology topology, StreamsBuilder streamsBuilder) {
-        topology.buildTopology();
+    public Topology topology(
+            List<MetricsTopology> topologies,
+            StreamsBuilder streamsBuilder
+    ) {
+        if (topologies.isEmpty()) {
+            log.info("No metrics topologies enabled!");
+        }
+        topologies.forEach(topology -> {
+            log.info("Building topology: {}", topology.getClass().getSimpleName());
+            topology.build(streamsBuilder);
+        });
         return streamsBuilder.build();
     }
 }

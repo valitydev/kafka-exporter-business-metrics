@@ -3,6 +3,7 @@ package dev.vality.exporter.businessmetrics;
 import dev.vality.exporter.businessmetrics.config.TestMetricsConfig;
 import dev.vality.exporter.businessmetrics.model.Metric;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
+import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalEvent;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import dev.vality.machinegun.eventsink.SinkEvent;
 import io.micrometer.core.instrument.Gauge;
@@ -33,7 +34,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class MetricsTopologyIntegrationTest {
 
     private TopologyTestDriver testDriver;
-    private TestInputTopic<String, SinkEvent> inputTopic;
+    private TestInputTopic<String, SinkEvent> inputPaymentTopic;
+    private TestInputTopic<String, SinkEvent> inputWithdrawalTopic;
 
     @Autowired
     private StreamsBuilder testBuilder;
@@ -45,6 +47,7 @@ class MetricsTopologyIntegrationTest {
     private MeterRegistry meterRegistry;
 
     private static final String TEST_INVOICE_ID = "testInvoiceId";
+    private static final String TEST_WITHDRAWAL_ID = "testWithdrawawalId";
 
     @BeforeEach
     void setup() {
@@ -53,8 +56,13 @@ class MetricsTopologyIntegrationTest {
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "dummy:8080");
         props.put(StreamsConfig.STATE_DIR_CONFIG, "/tmp/kafka-streams-test");
         testDriver = new TopologyTestDriver(testBuilder.build(), props);
-        inputTopic = testDriver.createInputTopic(
+        inputPaymentTopic = testDriver.createInputTopic(
                 "invoicing-events",
+                Serdes.String().serializer(),
+                sinkEventSerde.serializer()
+        );
+        inputWithdrawalTopic = testDriver.createInputTopic(
+                "withdrawal-events",
                 Serdes.String().serializer(),
                 sinkEventSerde.serializer()
         );
@@ -72,7 +80,7 @@ class MetricsTopologyIntegrationTest {
         MachineEvent startedInvoicePaymentEvents = getStartedInvoicePaymentEvents(TEST_INVOICE_ID);
         SinkEvent sinkEvent = new SinkEvent();
         sinkEvent.setEvent(startedInvoicePaymentEvents);
-        inputTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
+        inputPaymentTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
         meterRegistry.getMeters().forEach(meter -> {
             if (meter instanceof Gauge gauge) {
                 gauge.value();
@@ -83,14 +91,14 @@ class MetricsTopologyIntegrationTest {
         PaymentEvent result = store.get(TEST_INVOICE_ID);
         assertNotNull(result);
         assertEquals(TEST_INVOICE_ID, result.getInvoiceId());
-        Gauge gaugeCaptured = getGaugeCaptured();
+        Gauge gaugeCaptured = getGaugePaymentCaptured();
         assertNull(gaugeCaptured);
-        Gauge gaugePending = getGaugePending();
+        Gauge gaugePending = getGaugePaymentPending();
         assertNull(gaugePending);
 
         MachineEvent routeInvoicePaymentEvents = getRouteChangedInvoicePaymentEvents(TEST_INVOICE_ID);
         sinkEvent.setEvent(routeInvoicePaymentEvents);
-        inputTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
+        inputPaymentTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
         meterRegistry.getMeters().forEach(meter -> {
             if (meter instanceof Gauge gauge) {
                 gauge.value();
@@ -101,14 +109,14 @@ class MetricsTopologyIntegrationTest {
         result = store.get(TEST_INVOICE_ID);
         assertNotNull(result);
         assertEquals(TEST_INVOICE_ID, result.getInvoiceId());
-        gaugeCaptured = getGaugeCaptured();
+        gaugeCaptured = getGaugePaymentCaptured();
         assertNull(gaugeCaptured);
-        gaugePending = getGaugePendingWithRoute();
-        assertNull(gaugePending);
+        gaugePending = getGaugePaymentPendingWithRoute();
+        assertNotNull(gaugePending);
 
         MachineEvent statusChangedPaymentEvents = getStatusChangedPaymentEvents(TEST_INVOICE_ID);
         sinkEvent.setEvent(statusChangedPaymentEvents);
-        inputTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
+        inputPaymentTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
         meterRegistry.getMeters().forEach(meter -> {
             if (meter instanceof Gauge gauge) {
                 gauge.value();
@@ -119,16 +127,75 @@ class MetricsTopologyIntegrationTest {
         result = store.get(TEST_INVOICE_ID);
         assertNotNull(result);
         assertEquals(TEST_INVOICE_ID, result.getInvoiceId());
-        gaugeCaptured = getGaugeCaptured();
+        gaugeCaptured = getGaugePaymentCaptured();
         assertNotNull(gaugeCaptured);
         assertEquals(1.0, gaugeCaptured.value());
-        gaugePending = getGaugePending();
-        assertNull(gaugePending);
-        Collection<Meter> meters = getMeterCaptured();
+        gaugePending = getGaugePaymentPending();
+        assertNotNull(gaugePending);
+        Collection<Meter> meters = getMeterPaymentCaptured();
         assertEquals(1, meters.size());
     }
 
-    private Gauge getGaugePending() {
+    @Test
+    void testWithdrawalEventFlow() {
+        MachineEvent startedWithdrawalPaymentEvents = getStartedWithdrawalEvents(TEST_WITHDRAWAL_ID);
+        SinkEvent sinkEvent = new SinkEvent();
+        sinkEvent.setEvent(startedWithdrawalPaymentEvents);
+        inputWithdrawalTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
+        meterRegistry.getMeters().forEach(meter -> {
+            if (meter instanceof Gauge gauge) {
+                gauge.value();
+            }
+        });
+        ReadOnlyKeyValueStore<String, WithdrawalEvent> store =
+                testDriver.getKeyValueStore("withdrawal-started-store");
+        WithdrawalEvent result = store.get(TEST_WITHDRAWAL_ID);
+        assertNotNull(result);
+        assertEquals(TEST_WITHDRAWAL_ID, result.getWithdrawalId());
+        Gauge gaugeCaptured = getGaugeWithdrawalSucceeded();
+        assertNull(gaugeCaptured);
+        Gauge gaugePending = getGaugeWithdrawalPending();
+        assertNull(gaugePending);
+
+        MachineEvent routeWithdrawalEvents = getRouteChangedWithdrawalEvents(TEST_WITHDRAWAL_ID);
+        sinkEvent.setEvent(routeWithdrawalEvents);
+        inputWithdrawalTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
+        meterRegistry.getMeters().forEach(meter -> {
+            if (meter instanceof Gauge gauge) {
+                gauge.value();
+            }
+        });
+        store =
+                testDriver.getKeyValueStore("withdrawal-route-store");
+        result = store.get(TEST_WITHDRAWAL_ID);
+        assertNotNull(result);
+        assertEquals(TEST_WITHDRAWAL_ID, result.getWithdrawalId());
+        gaugeCaptured = getGaugeWithdrawalSucceeded();
+        assertNull(gaugeCaptured);
+        gaugePending = getGaugeWithdrawalPending();
+        assertNull(gaugePending);
+
+        MachineEvent statusChangedWithdrawalEvents = getStatusChangedWithdrawalEvents(TEST_WITHDRAWAL_ID);
+        sinkEvent.setEvent(statusChangedWithdrawalEvents);
+        inputWithdrawalTopic.pipeInput(sinkEvent.getEvent().getSourceId(), sinkEvent);
+        meterRegistry.getMeters().forEach(meter -> {
+            if (meter instanceof Gauge gauge) {
+                gauge.value();
+            }
+        });
+        store =
+                testDriver.getKeyValueStore("withdrawal-status-store");
+        result = store.get(TEST_WITHDRAWAL_ID);
+        assertNotNull(result);
+        assertEquals(TEST_WITHDRAWAL_ID, result.getWithdrawalId());
+        gaugeCaptured = getGaugeWithdrawalSucceeded();
+        assertNotNull(gaugeCaptured);
+        assertEquals(1.0, gaugeCaptured.value());
+        Collection<Meter> meters = getMeterWithdrawalSucceeded();
+        assertEquals(1, meters.size());
+    }
+
+    private Gauge getGaugePaymentPending() {
         return meterRegistry
                 .find(Metric.PAYMENTS_STATUS_COUNT.getName())
                 .tags(
@@ -140,7 +207,7 @@ class MetricsTopologyIntegrationTest {
                 .gauge();
     }
 
-    private Gauge getGaugePendingWithRoute() {
+    private Gauge getGaugePaymentPendingWithRoute() {
         return meterRegistry
                 .find(Metric.PAYMENTS_STATUS_COUNT.getName())
                 .tags(
@@ -154,7 +221,7 @@ class MetricsTopologyIntegrationTest {
                 .gauge();
     }
 
-    private Gauge getGaugeCaptured() {
+    private Gauge getGaugePaymentCaptured() {
         return meterRegistry
                 .find(Metric.PAYMENTS_STATUS_COUNT.getName())
                 .tags(
@@ -168,7 +235,7 @@ class MetricsTopologyIntegrationTest {
                 .gauge();
     }
 
-    private Collection<Meter> getMeterCaptured() {
+    private Collection<Meter> getMeterPaymentCaptured() {
         return meterRegistry
                 .find(Metric.PAYMENTS_STATUS_COUNT.getName())
                 .tags(
@@ -177,6 +244,60 @@ class MetricsTopologyIntegrationTest {
                         "shop_id", "test_shop_id",
                         "currency", "RUB",
                         "status", "captured",
+                        "duration", "15m"
+                )
+                .meters();
+    }
+
+    private Gauge getGaugeWithdrawalPending() {
+        return meterRegistry
+                .find(Metric.WITHDRAWALS_STATUS_COUNT.getName())
+                .tags(
+                        "wallet_id", "test_wallet_id",
+                        "currency", "RUB",
+                        "status", "pending",
+                        "duration", "5m"
+                )
+                .gauge();
+    }
+
+    private Gauge getGaugeWithdrawalPendingWithRoute() {
+        return meterRegistry
+                .find(Metric.WITHDRAWALS_STATUS_COUNT.getName())
+                .tags(
+                        "provider_id", "1",
+                        "terminal_id", "2",
+                        "shop_id", "test_wallet_id",
+                        "currency", "RUB",
+                        "status", "pending",
+                        "duration", "5m"
+                )
+                .gauge();
+    }
+
+    private Gauge getGaugeWithdrawalSucceeded() {
+        return meterRegistry
+                .find(Metric.WITHDRAWALS_STATUS_COUNT.getName())
+                .tags(
+                        "provider_id", "1",
+                        "terminal_id", "2",
+                        "shop_id", "test_wallet_id",
+                        "currency", "RUB",
+                        "status", "succeeded",
+                        "duration", "15m"
+                )
+                .gauge();
+    }
+
+    private Collection<Meter> getMeterWithdrawalSucceeded() {
+        return meterRegistry
+                .find(Metric.WITHDRAWALS_STATUS_COUNT.getName())
+                .tags(
+                        "provider_id", "1",
+                        "terminal_id", "2",
+                        "shop_id", "test_wallet_id",
+                        "currency", "RUB",
+                        "status", "succeeded",
                         "duration", "15m"
                 )
                 .meters();

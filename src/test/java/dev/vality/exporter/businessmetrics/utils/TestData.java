@@ -6,6 +6,10 @@ import dev.vality.damsel.domain.InvoicePayment;
 import dev.vality.damsel.domain.InvoicePaymentPending;
 import dev.vality.damsel.domain.*;
 import dev.vality.damsel.payment_processing.*;
+import dev.vality.exporter.businessmetrics.serde.WithdrawalEventPayloadSerializer;
+import dev.vality.fistful.withdrawal.*;
+import dev.vality.fistful.withdrawal.status.Status;
+import dev.vality.fistful.withdrawal.status.Succeeded;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import dev.vality.machinegun.msgpack.Value;
 import dev.vality.sink.common.serialization.impl.PaymentEventPayloadSerializer;
@@ -24,6 +28,7 @@ import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 public class TestData {
 
     public static final String TEST_SHOP_ID = "test_shop_id";
+    public static final String TEST_WALLET_ID = "test_wallet_id";
     public static final String TEST_PARTY_ID = "test_party_id";
 
     @SuppressWarnings("LineLength")
@@ -108,6 +113,54 @@ public class TestData {
                                 )))));
     }
 
+    public static MachineEvent getStartedWithdrawalEvents(String withdrawalId) {
+        WithdrawalEventPayloadSerializer withdrawalEventPayloadSerializer = new WithdrawalEventPayloadSerializer();
+        return new MachineEvent()
+                .setSourceNs("source_ns")
+                .setSourceId(withdrawalId)
+                .setEventId(1)
+                .setCreatedAt(temporalToString(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)))
+                .setData(Value.bin(withdrawalEventPayloadSerializer.serialize(
+                        new TimestampedChange()
+                                .setOccuredAt(temporalToString(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)))
+                                .setChange(new Change(Change.created(
+                                new CreatedChange().setWithdrawal(
+                                        buildWithdarwal(withdrawalId))))))));
+    }
+
+    public static MachineEvent getRouteChangedWithdrawalEvents(String withdrawalId) {
+        WithdrawalEventPayloadSerializer withdrawalEventPayloadSerializer = new WithdrawalEventPayloadSerializer();
+        return new MachineEvent()
+                .setSourceNs("source_ns")
+                .setSourceId(withdrawalId)
+                .setEventId(1)
+                .setCreatedAt(temporalToString(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)))
+                .setData(Value.bin(withdrawalEventPayloadSerializer.serialize(
+                        new TimestampedChange()
+                                .setOccuredAt(temporalToString(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)))
+                                .setChange(new Change(Change.route(
+                                new RouteChange()
+                                        .setRoute(
+                                                new Route()
+                                                        .setProviderId(1)
+                                                        .setTerminalId(2))))))));
+    }
+
+    public static MachineEvent getStatusChangedWithdrawalEvents(String withdrawalId) {
+        WithdrawalEventPayloadSerializer withdrawalEventPayloadSerializer = new WithdrawalEventPayloadSerializer();
+        return new MachineEvent()
+                .setSourceNs("source_ns")
+                .setSourceId(withdrawalId)
+                .setEventId(1)
+                .setCreatedAt(temporalToString(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)))
+                .setData(Value.bin(withdrawalEventPayloadSerializer.serialize(
+                        new TimestampedChange()
+                                .setOccuredAt(temporalToString(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)))
+                                .setChange(new Change(Change.status_changed(
+                                new StatusChange().setStatus(
+                                        Status.succeeded(new Succeeded()))))))));
+    }
+
     public static Invoice buildInvoice(String invoiceId) {
         return new Invoice()
                 .setId(invoiceId)
@@ -145,6 +198,17 @@ public class TestData {
                                                 .setPaymentService(new PaymentServiceRef("alipay"))))
                                 .setRecurrentParent(new RecurrentParentPayment("1", "2"))
                                 .setContactInfo(new ContactInfo())));
+    }
+
+    public static Withdrawal buildWithdarwal(String withdrawalId) {
+        return new Withdrawal()
+                .setWalletId(TEST_WALLET_ID)
+                .setId(withdrawalId)
+                .setCreatedAt(temporalToString(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS)))
+                .setBody(new dev.vality.fistful.base.Cash(11, new dev.vality.fistful.base.CurrencyRef("RUB")))
+                .setDomainRevision(1)
+                .setDestinationId(withdrawalId)
+                .setPartyId(TEST_PARTY_ID);
     }
 
     private static final DateTimeFormatter FORMATTER = ISO_INSTANT;
