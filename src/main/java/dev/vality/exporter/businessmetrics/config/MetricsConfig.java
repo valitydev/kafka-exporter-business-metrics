@@ -20,7 +20,7 @@ public class MetricsConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    public MetricsFactory metricsConfigFactory(
+    public MetricsFactory metricsFactory(
             MeterRegistry registry,
             PaymentMetricsStore paymentStore,
             WithdrawalMetricsStore withdrawalStore
@@ -30,7 +30,7 @@ public class MetricsConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    public MetricsBindingRegistry metricsConfigRegistry(
+    public MetricsBindingRegistry metricsBindingRegistry(
             MetricsFactory factory
     ) {
         return new MetricsBindingRegistry(factory);
