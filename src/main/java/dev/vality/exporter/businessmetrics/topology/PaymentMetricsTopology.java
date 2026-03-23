@@ -2,8 +2,13 @@ package dev.vality.exporter.businessmetrics.topology;
 
 import dev.vality.damsel.payment_processing.EventPayload;
 import dev.vality.exporter.businessmetrics.converter.payment.InvoiceEventConverterHandler;
+import dev.vality.exporter.businessmetrics.spec.AggregationSpec;
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
+import dev.vality.exporter.businessmetrics.model.payments.PaymentAggregation;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
+import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricKey;
+import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricsStore;
+import dev.vality.exporter.businessmetrics.spec.PaymentAggregationSpec;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import dev.vality.machinegun.eventsink.SinkEvent;
 import dev.vality.sink.common.parser.impl.MachineEventParser;
@@ -33,6 +38,7 @@ public class PaymentMetricsTopology implements MetricsTopology {
 
     private final Serde<SinkEvent> sinkEventSerde;
     private final Serde<PaymentEvent> paymentEventSerde;
+    private final PaymentAggregationSpec paymentAggregationSpec;
     private final InvoiceEventConverterHandler invoiceEventConverterHandler;
     private final MachineEventParser<EventPayload> parser;
     private final MetricsAggregator metricsAggregator;
@@ -75,9 +81,9 @@ public class PaymentMetricsTopology implements MetricsTopology {
 
         KStream<String, PaymentEvent> payments = buildFullPayment(paymentEvents);
         for (Duration window : MetricsWindows.WINDOWS) {
-            metricsAggregator.aggregatePayments(payments, window);
+            metricsAggregator.aggregateWindowed(payments, window, paymentAggregationSpec.create());
         }
-        metricsAggregator.aggregateTodayPayments(payments);
+        metricsAggregator.aggregateToday(payments, paymentAggregationSpec.create());
     }
 
     private KStream<String, PaymentEvent> buildFullPayment(KStream<String, PaymentEvent> paymentEvents) {

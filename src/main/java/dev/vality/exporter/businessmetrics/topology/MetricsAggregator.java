@@ -1,15 +1,8 @@
 package dev.vality.exporter.businessmetrics.topology;
 
+import dev.vality.exporter.businessmetrics.spec.AggregationSpec;
 import dev.vality.exporter.businessmetrics.model.MetricsStore;
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentAggregation;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricKey;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricsStore;
-import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalAggregation;
-import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalEvent;
-import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalMetricKey;
-import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalMetricsStore;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.kstream.*;
@@ -25,81 +18,26 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class MetricsAggregator {
 
-    private final Serde<PaymentMetricKey> paymentMetricKeySerde;
-    private final Serde<PaymentAggregation> paymentAggregationSerde;
-    private final Serde<PaymentEvent> paymentEventSerde;
-    private final PaymentMetricsStore paymentMetricsStore;
-    private final Serde<WithdrawalMetricKey> withdrawalMetricKeySerde;
-    private final Serde<WithdrawalAggregation> withdrawalAggregationSerde;
-    private final Serde<WithdrawalEvent> withdrawalEventSerde;
-    private final WithdrawalMetricsStore withdrawalMetricsStore;
-
-    public void aggregatePayments(
-            KStream<String, PaymentEvent> stream,
-            Duration window
+    public <K, V, A> void aggregateWindowed(
+            KStream<String, V> stream,
+            Duration window,
+            AggregationSpec<K, V, A> spec
     ) {
-        aggregateWithWindow(
+        aggregateWindowed(
                 stream,
                 window,
-                paymentMetricKeySerde,
-                paymentEventSerde,
-                paymentAggregationSerde,
-                PaymentAggregation::new,
-                (key, event, agg) -> agg.add(event),
-                PaymentMetricKey::from,
-                PaymentAggregation::getLastUpdated,
-                paymentMetricsStore
+                spec.keySerde(),
+                spec.eventSerde(),
+                spec.aggSerde(),
+                spec.initializer(),
+                spec.aggregator(),
+                spec.keyExtractor(),
+                spec.timestampExtractor(),
+                spec.store()
         );
     }
 
-    public void aggregateWithdrawals(
-            KStream<String, WithdrawalEvent> stream,
-            Duration window
-    ) {
-        aggregateWithWindow(
-                stream,
-                window,
-                withdrawalMetricKeySerde,
-                withdrawalEventSerde,
-                withdrawalAggregationSerde,
-                WithdrawalAggregation::new,
-                (key, event, agg) -> agg.add(event),
-                WithdrawalMetricKey::from,
-                WithdrawalAggregation::getLastUpdated,
-                withdrawalMetricsStore
-        );
-    }
-
-
-    public void aggregateTodayPayments(KStream<String, PaymentEvent> stream) {
-        aggregateToday(
-                stream,
-                paymentMetricKeySerde,
-                paymentEventSerde,
-                paymentAggregationSerde,
-                PaymentAggregation::new,
-                (key, event, agg) -> agg.add(event),
-                PaymentMetricKey::from,
-                PaymentAggregation::getLastUpdated,
-                paymentMetricsStore
-        );
-    }
-
-    public void aggregateTodayWithdrawals(KStream<String, WithdrawalEvent> stream) {
-        aggregateToday(
-                stream,
-                withdrawalMetricKeySerde,
-                withdrawalEventSerde,
-                withdrawalAggregationSerde,
-                WithdrawalAggregation::new,
-                (key, event, agg) -> agg.add(event),
-                WithdrawalMetricKey::from,
-                WithdrawalAggregation::getLastUpdated,
-                withdrawalMetricsStore
-        );
-    }
-
-    private <K, V, A> void aggregateWithWindow(
+    private <K, V, A> void aggregateWindowed(
             KStream<String, V> stream,
             Duration window,
             Serde<K> keySerde,
@@ -131,6 +69,23 @@ public class MetricsAggregator {
                                 agg
                         )
                 );
+    }
+
+    public <K, V, A> void aggregateToday(
+            KStream<String, V> stream,
+            AggregationSpec<K, V, A> spec
+    ) {
+        aggregateToday(
+                stream,
+                spec.keySerde(),
+                spec.eventSerde(),
+                spec.aggSerde(),
+                spec.initializer(),
+                spec.aggregator(),
+                spec.keyExtractor(),
+                spec.timestampExtractor(),
+                spec.store()
+        );
     }
 
     private <K, V, A> void aggregateToday(

@@ -1,8 +1,13 @@
 package dev.vality.exporter.businessmetrics.topology;
 
 import dev.vality.exporter.businessmetrics.converter.withdrawal.WithdrawalEventConverterHandler;
+import dev.vality.exporter.businessmetrics.spec.AggregationSpec;
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
+import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalAggregation;
 import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalEvent;
+import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalMetricKey;
+import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalMetricsStore;
+import dev.vality.exporter.businessmetrics.spec.WithdrawalAggregationSpec;
 import dev.vality.fistful.withdrawal.TimestampedChange;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import dev.vality.machinegun.eventsink.SinkEvent;
@@ -32,6 +37,7 @@ public class WithdrawalMetricsTopology implements MetricsTopology {
 
     private final Serde<SinkEvent> sinkEventSerde;
     private final Serde<WithdrawalEvent> withdrawalEventSerde;
+    private final WithdrawalAggregationSpec withdrawalAggregationSpec;
     private final WithdrawalEventConverterHandler withdrawalEventConverterHandler;
     private final MachineEventParser<TimestampedChange> parser;
     private final MetricsAggregator metricsAggregator;
@@ -74,9 +80,9 @@ public class WithdrawalMetricsTopology implements MetricsTopology {
 
         KStream<String, WithdrawalEvent> withdrawals = buildFullWithdrawal(withdrawalEvents);
         for (Duration window : MetricsWindows.WINDOWS) {
-            metricsAggregator.aggregateWithdrawals(withdrawals, window);
+            metricsAggregator.aggregateWindowed(withdrawals, window, withdrawalAggregationSpec.create());
         }
-        metricsAggregator.aggregateTodayWithdrawals(withdrawals);
+        metricsAggregator.aggregateToday(withdrawals, withdrawalAggregationSpec.create());
     }
 
     private KStream<String, WithdrawalEvent> buildFullWithdrawal(KStream<String, WithdrawalEvent> withdrawalEvents) {
