@@ -47,6 +47,7 @@ public class MetricsAggregator {
                 PaymentAggregation::new,
                 (key, event, agg) -> agg.add(event),
                 PaymentMetricKey::from,
+                PaymentAggregation::getLastUpdated,
                 paymentMetricsStore
         );
     }
@@ -64,6 +65,7 @@ public class MetricsAggregator {
                 WithdrawalAggregation::new,
                 (key, event, agg) -> agg.add(event),
                 WithdrawalMetricKey::from,
+                WithdrawalAggregation::getLastUpdated,
                 withdrawalMetricsStore
         );
     }
@@ -78,6 +80,7 @@ public class MetricsAggregator {
                 PaymentAggregation::new,
                 (key, event, agg) -> agg.add(event),
                 PaymentMetricKey::from,
+                PaymentAggregation::getLastUpdated,
                 paymentMetricsStore
         );
     }
@@ -91,6 +94,7 @@ public class MetricsAggregator {
                 WithdrawalAggregation::new,
                 (key, event, agg) -> agg.add(event),
                 WithdrawalMetricKey::from,
+                WithdrawalAggregation::getLastUpdated,
                 withdrawalMetricsStore
         );
     }
@@ -104,6 +108,7 @@ public class MetricsAggregator {
             Initializer<A> initializer,
             Aggregator<K, V, A> aggregator,
             Function<V, K> keyExtractor,
+            Function<A, Instant> timestampExtractor,
             MetricsStore<K, A> store
     ) {
         stream
@@ -122,7 +127,7 @@ public class MetricsAggregator {
                         store.put(
                                 windowedKey.key(),
                                 MetricsWindows.tag(window),
-                                extractDate(agg),
+                                extractDate(timestampExtractor.apply(agg)),
                                 agg
                         )
                 );
@@ -136,6 +141,7 @@ public class MetricsAggregator {
             Initializer<A> initializer,
             Aggregator<K, V, A> aggregator,
             Function<V, K> keyExtractor,
+            Function<A, Instant> timestampExtractor,
             MetricsStore<K, A> store
     ) {
         stream
@@ -153,24 +159,14 @@ public class MetricsAggregator {
                         store.put(
                                 key,
                                 "today",
-                                extractDate(agg),
+                                extractDate(timestampExtractor.apply(agg)),
                                 agg
                         )
                 );
     }
 
-    private <A> LocalDate extractDate(A agg) {
-        Instant lastUpdated;
-
-        if (agg instanceof PaymentAggregation paymentAggregation) {
-            lastUpdated = paymentAggregation.getLastUpdated();
-        } else if (agg instanceof WithdrawalAggregation withdrawalAggregation) {
-            lastUpdated = withdrawalAggregation.getLastUpdated();
-        } else {
-            throw new IllegalArgumentException("Unknown aggregation type");
-        }
-
-        return lastUpdated.atZone(ZoneId.of("Europe/Moscow")).toLocalDate();
+    private LocalDate extractDate(Instant instant) {
+        return instant.atZone(ZoneId.of("Europe/Moscow")).toLocalDate();
     }
 
 }
