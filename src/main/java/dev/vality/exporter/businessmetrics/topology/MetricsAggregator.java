@@ -1,5 +1,6 @@
 package dev.vality.exporter.businessmetrics.topology;
 
+import dev.vality.exporter.businessmetrics.model.MetricsStore;
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentAggregation;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
@@ -11,14 +12,14 @@ import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalMetricKey
 import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalMetricsStore;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.common.serialization.Serde;
-import org.apache.kafka.streams.kstream.Grouped;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Materialized;
-import org.apache.kafka.streams.kstream.TimeWindows;
+import org.apache.kafka.streams.kstream.*;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.function.Function;
 
 @Component
 @RequiredArgsConstructor
@@ -37,93 +38,139 @@ public class MetricsAggregator {
             KStream<String, PaymentEvent> stream,
             Duration window
     ) {
-        stream
-                .groupBy((invoiceId, paymentEvent) -> PaymentMetricKey.from(paymentEvent),
-                        Grouped.with(paymentMetricKeySerde, paymentEventSerde))
-                .windowedBy(TimeWindows.ofSizeAndGrace(window, Duration.ofMinutes(5))
-                )
-                .aggregate(
-                        PaymentAggregation::new,
-                        (metricKey, paymentEvent, aggregation) -> aggregation.add(paymentEvent),
-                        Materialized.with(paymentMetricKeySerde, paymentAggregationSerde))
-                .toStream()
-                .foreach((windowedKey, agg) ->
-                        paymentMetricsStore.put(
-                                windowedKey.key(),
-                                MetricsWindows.tag(window),
-                                agg.getLastUpdated().atZone(ZoneId.of("Europe/Moscow")).toLocalDate(),
-                                agg
-                        )
-                );
+        aggregateWithWindow(
+                stream,
+                window,
+                paymentMetricKeySerde,
+                paymentEventSerde,
+                paymentAggregationSerde,
+                PaymentAggregation::new,
+                (key, event, agg) -> agg.add(event),
+                PaymentMetricKey::from,
+                paymentMetricsStore
+        );
     }
 
     public void aggregateWithdrawals(
             KStream<String, WithdrawalEvent> stream,
             Duration window
     ) {
-        stream
-                .groupBy((withdrawalId, withdrawalEvent) -> WithdrawalMetricKey.from(withdrawalEvent),
-                        Grouped.with(withdrawalMetricKeySerde, withdrawalEventSerde))
-                .windowedBy(TimeWindows.ofSizeAndGrace(window, Duration.ofMinutes(5))
-                )
-                .aggregate(
-                        WithdrawalAggregation::new,
-                        (metricKey, withdrawalEvent, aggregation) -> aggregation.add(withdrawalEvent),
-                        Materialized.with(withdrawalMetricKeySerde, withdrawalAggregationSerde))
-                .toStream()
-                .foreach((windowedKey, agg) ->
-                        withdrawalMetricsStore.put(
-                                windowedKey.key(),
-                                MetricsWindows.tag(window),
-                                agg.getLastUpdated().atZone(ZoneId.of("Europe/Moscow")).toLocalDate(),
-                                agg
-                        )
-                );
+        aggregateWithWindow(
+                stream,
+                window,
+                withdrawalMetricKeySerde,
+                withdrawalEventSerde,
+                withdrawalAggregationSerde,
+                WithdrawalAggregation::new,
+                (key, event, agg) -> agg.add(event),
+                WithdrawalMetricKey::from,
+                withdrawalMetricsStore
+        );
     }
 
 
     public void aggregateTodayPayments(KStream<String, PaymentEvent> stream) {
+        aggregateToday(
+                stream,
+                paymentMetricKeySerde,
+                paymentEventSerde,
+                paymentAggregationSerde,
+                PaymentAggregation::new,
+                (key, event, agg) -> agg.add(event),
+                PaymentMetricKey::from,
+                paymentMetricsStore
+        );
+    }
+
+    public void aggregateTodayWithdrawals(KStream<String, WithdrawalEvent> stream) {
+        aggregateToday(
+                stream,
+                withdrawalMetricKeySerde,
+                withdrawalEventSerde,
+                withdrawalAggregationSerde,
+                WithdrawalAggregation::new,
+                (key, event, agg) -> agg.add(event),
+                WithdrawalMetricKey::from,
+                withdrawalMetricsStore
+        );
+    }
+
+    private <K, V, A> void aggregateWithWindow(
+            KStream<String, V> stream,
+            Duration window,
+            Serde<K> keySerde,
+            Serde<V> eventSerde,
+            Serde<A> aggSerde,
+            Initializer<A> initializer,
+            Aggregator<K, V, A> aggregator,
+            Function<V, K> keyExtractor,
+            MetricsStore<K, A> store
+    ) {
         stream
                 .groupBy(
-                        (key, event) -> PaymentMetricKey.from(event),
-                        Grouped.with(paymentMetricKeySerde, paymentEventSerde)
+                        (key, event) -> keyExtractor.apply(event),
+                        Grouped.with(keySerde, eventSerde)
                 )
+                .windowedBy(TimeWindows.ofSizeAndGrace(window, Duration.ofMinutes(5)))
                 .aggregate(
-                        PaymentAggregation::new,
-                        (metricKey, event, agg) -> agg.add(event),
-                        Materialized.with(paymentMetricKeySerde, paymentAggregationSerde)
+                        initializer,
+                        aggregator,
+                        Materialized.with(keySerde, aggSerde)
                 )
                 .toStream()
-                .foreach((key, agg) ->
-                        paymentMetricsStore.put(
-                                key,
-                                "today",
-                                agg.getLastUpdated().atZone(ZoneId.of("Europe/Moscow")).toLocalDate(),
+                .foreach((Windowed<K> windowedKey, A agg) ->
+                        store.put(
+                                windowedKey.key(),
+                                MetricsWindows.tag(window),
+                                extractDate(agg),
                                 agg
                         )
                 );
     }
 
-    public void aggregateTodayWithdrawals(KStream<String, WithdrawalEvent> stream) {
+    private <K, V, A> void aggregateToday(
+            KStream<String, V> stream,
+            Serde<K> keySerde,
+            Serde<V> eventSerde,
+            Serde<A> aggSerde,
+            Initializer<A> initializer,
+            Aggregator<K, V, A> aggregator,
+            Function<V, K> keyExtractor,
+            MetricsStore<K, A> store
+    ) {
         stream
                 .groupBy(
-                        (key, event) -> WithdrawalMetricKey.from(event),
-                        Grouped.with(withdrawalMetricKeySerde, withdrawalEventSerde)
+                        (key, event) -> keyExtractor.apply(event),
+                        Grouped.with(keySerde, eventSerde)
                 )
                 .aggregate(
-                        WithdrawalAggregation::new,
-                        (metricKey, event, agg) -> agg.add(event),
-                        Materialized.with(withdrawalMetricKeySerde, withdrawalAggregationSerde)
+                        initializer,
+                        aggregator,
+                        Materialized.with(keySerde, aggSerde)
                 )
                 .toStream()
                 .foreach((key, agg) ->
-                        withdrawalMetricsStore.put(
+                        store.put(
                                 key,
                                 "today",
-                                agg.getLastUpdated().atZone(ZoneId.of("Europe/Moscow")).toLocalDate(),
+                                extractDate(agg),
                                 agg
                         )
                 );
+    }
+
+    private <A> LocalDate extractDate(A agg) {
+        Instant lastUpdated;
+
+        if (agg instanceof PaymentAggregation paymentAggregation) {
+            lastUpdated = paymentAggregation.getLastUpdated();
+        } else if (agg instanceof WithdrawalAggregation withdrawalAggregation) {
+            lastUpdated = withdrawalAggregation.getLastUpdated();
+        } else {
+            throw new IllegalArgumentException("Unknown aggregation type");
+        }
+
+        return lastUpdated.atZone(ZoneId.of("Europe/Moscow")).toLocalDate();
     }
 
 }
