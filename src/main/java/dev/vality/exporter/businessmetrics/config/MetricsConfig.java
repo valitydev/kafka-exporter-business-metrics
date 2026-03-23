@@ -1,8 +1,8 @@
 package dev.vality.exporter.businessmetrics.config;
 
 import dev.vality.exporter.businessmetrics.config.properties.MetricsTtlProperties;
-import dev.vality.exporter.businessmetrics.factory.MetricsFactory;
-import dev.vality.exporter.businessmetrics.model.MetricsBindingRegistry;
+import dev.vality.exporter.businessmetrics.binding.MetricsBindingFactory;
+import dev.vality.exporter.businessmetrics.binding.MetricsBindingRegistry;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricsStore;
 import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalMetricsStore;
 import dev.vality.exporter.businessmetrics.service.MetricsService;
@@ -20,18 +20,18 @@ public class MetricsConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    public MetricsFactory metricsFactory(
+    public MetricsBindingFactory metricsFactory(
             MeterRegistry registry,
             PaymentMetricsStore paymentStore,
             WithdrawalMetricsStore withdrawalStore
     ) {
-        return new MetricsFactory(registry, paymentStore, withdrawalStore);
+        return new MetricsBindingFactory(registry, paymentStore, withdrawalStore);
     }
 
     @Bean
     @ConditionalOnMissingBean
     public MetricsBindingRegistry metricsBindingRegistry(
-            MetricsFactory factory
+            MetricsBindingFactory factory
     ) {
         return new MetricsBindingRegistry(factory);
     }

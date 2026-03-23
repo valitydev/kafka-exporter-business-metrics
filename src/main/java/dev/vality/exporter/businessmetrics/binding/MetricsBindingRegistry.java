@@ -1,6 +1,5 @@
-package dev.vality.exporter.businessmetrics.model;
+package dev.vality.exporter.businessmetrics.binding;
 
-import dev.vality.exporter.businessmetrics.factory.MetricsFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +9,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MetricsBindingRegistry {
 
-    private final MetricsFactory factory;
+    private final MetricsBindingFactory factory;
 
     public List<MetricsBinding<?, ?>> all() {
         return List.of(

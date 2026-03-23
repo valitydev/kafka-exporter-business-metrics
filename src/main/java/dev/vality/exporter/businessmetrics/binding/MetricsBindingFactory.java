@@ -1,8 +1,7 @@
-package dev.vality.exporter.businessmetrics.factory;
+package dev.vality.exporter.businessmetrics.binding;
 
 import dev.vality.exporter.businessmetrics.model.CustomTag;
 import dev.vality.exporter.businessmetrics.model.Metric;
-import dev.vality.exporter.businessmetrics.model.MetricsBinding;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentAggregation;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricsStore;
 import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalAggregation;
@@ -18,7 +17,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class MetricsFactory {
+public class MetricsBindingFactory {
 
     private final MeterRegistry registry;
     private final PaymentMetricsStore paymentMetricsStore;

@@ -1,4 +1,4 @@
-package dev.vality.exporter.businessmetrics.model;
+package dev.vality.exporter.businessmetrics.binding;
 
 import io.micrometer.core.instrument.MultiGauge;
 import io.micrometer.core.instrument.Tags;
