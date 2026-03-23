@@ -261,20 +261,6 @@ class MetricsTopologyIntegrationTest {
                 .gauge();
     }
 
-    private Gauge getGaugeWithdrawalPendingWithRoute() {
-        return meterRegistry
-                .find(Metric.WITHDRAWALS_STATUS_COUNT.getName())
-                .tags(
-                        "provider_id", "1",
-                        "terminal_id", "2",
-                        "shop_id", "test_wallet_id",
-                        "currency", "RUB",
-                        "status", "pending",
-                        "duration", "5m"
-                )
-                .gauge();
-    }
-
     private Gauge getGaugeWithdrawalSucceeded() {
         return meterRegistry
                 .find(Metric.WITHDRAWALS_STATUS_COUNT.getName())

@@ -115,13 +115,13 @@ public class PaymentMetricsTopology extends AbstractMetricsTopology<PaymentEvent
 
     @Override
     protected boolean isRoute(PaymentEvent event) {
-        return event.getProviderId() != 0
-                && event.getTerminalId() != 0;
+        return event.getProviderId() != 0 && event.getTerminalId() != 0
+                && (event.getAmount() == 0 || event.getShopId() == null);
     }
 
     @Override
     protected boolean isStatus(PaymentEvent event) {
-        return event.getStatus() != null;
+        return event.getStatus() != null && event.getAmount() == 0;
     }
 
     @Override

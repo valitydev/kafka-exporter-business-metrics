@@ -1,5 +1,6 @@
 package dev.vality.exporter.businessmetrics.topology;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.kstream.Grouped;
@@ -7,6 +8,7 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
 
+@Slf4j
 public abstract class AbstractMetricsTopology<E> implements MetricsTopology {
 
     protected abstract String getStartedStore();
@@ -40,7 +42,9 @@ public abstract class AbstractMetricsTopology<E> implements MetricsTopology {
 
     protected KStream<String, E> buildFull(KStream<String, E> input) {
 
-        KStream<String, E> started = input.filter((k, v) -> isStarted(v));
+        KStream<String, E> started = input.filter((k, v) -> isStarted(v))
+                .peek((k, event) ->
+                        log.trace("Started event selected. id={}, event={}", k, event));
         KStream<String, E> route = input.filter((k, v) -> isRoute(v));
         KStream<String, E> status = input.filter((k, v) -> isStatus(v));
 

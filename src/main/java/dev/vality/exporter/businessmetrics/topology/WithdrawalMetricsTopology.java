@@ -104,13 +104,13 @@ public class WithdrawalMetricsTopology extends AbstractMetricsTopology<Withdrawa
 
     @Override
     protected boolean isRoute(WithdrawalEvent event) {
-        return event.getProviderId() != 0
-                && event.getTerminalId() != 0;
+        return event.getProviderId() != 0 && event.getTerminalId() != 0
+                && (event.getAmount() == 0 || event.getWalletId() == null);
     }
 
     @Override
     protected boolean isStatus(WithdrawalEvent event) {
-        return event.getStatus() != null;
+        return event.getStatus() != null && event.getAmount() == 0;
     }
 
     @Override
