@@ -267,7 +267,7 @@ class MetricsTopologyIntegrationTest {
                 .tags(
                         "provider_id", "1",
                         "terminal_id", "2",
-                        "shop_id", "test_wallet_id",
+                        "wallet_id", "test_wallet_id",
                         "currency", "RUB",
                         "status", "succeeded",
                         "duration", "15m"
@@ -281,7 +281,7 @@ class MetricsTopologyIntegrationTest {
                 .tags(
                         "provider_id", "1",
                         "terminal_id", "2",
-                        "shop_id", "test_wallet_id",
+                        "wallet_id", "test_wallet_id",
                         "currency", "RUB",
                         "status", "succeeded",
                         "duration", "15m"
