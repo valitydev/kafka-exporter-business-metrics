@@ -25,8 +25,8 @@ public class MetricsBindingFactory {
 
     private static final String PAYMENT_COUNT_SCRAPE = "ebm_payments_count_scrape";
     private static final String PAYMENT_AMOUNT_SCRAPE = "ebm_payments_amount_scrape";
-    private static final String WITHDRAWAL_COUNT_SCRAPE = "ebm_withdrawal_count_scrape";
-    private static final String WITHDRAWAL_AMOUNT_SCRAPE = "ebm_withdrawal_amount_scrape";
+    private static final String WITHDRAWAL_COUNT_SCRAPE = "ebm_withdrawals_count_scrape";
+    private static final String WITHDRAWAL_AMOUNT_SCRAPE = "ebm_withdrawals_amount_scrape";
 
     public MetricsBinding<PaymentMetricsStore.MetricKey, PaymentAggregation> payments() {
         MultiGauge count = MultiGauge.builder(Metric.PAYMENTS_STATUS_COUNT.getName())
@@ -92,7 +92,7 @@ public class MetricsBindingFactory {
                 CustomTag.currency(key.currency()),
                 CustomTag.status(key.status()),
                 CustomTag.duration(key.window()),
-                Tag.of("date", key.date().toString())
+                CustomTag.date(key.date().toString())
         );
     }
 
@@ -100,11 +100,11 @@ public class MetricsBindingFactory {
         return Tags.of(
                 CustomTag.providerId(String.valueOf(key.providerId())),
                 CustomTag.terminalId(String.valueOf(key.terminalId())),
-                CustomTag.shopId(key.walletId()),
+                CustomTag.walletId(key.walletId()),
                 CustomTag.currency(key.currency()),
                 CustomTag.status(key.status()),
                 CustomTag.duration(key.window()),
-                Tag.of("date", key.date().toString())
+                CustomTag.date(key.date().toString())
         );
     }
 }
