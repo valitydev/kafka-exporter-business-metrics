@@ -91,8 +91,7 @@ public class MetricsBindingFactory {
                 CustomTag.shopId(key.shopId()),
                 CustomTag.currency(key.currency()),
                 CustomTag.status(key.status()),
-                CustomTag.duration(key.window()),
-                CustomTag.date(key.date().toString())
+                CustomTag.duration(key.window())
         );
     }
 
@@ -103,8 +102,7 @@ public class MetricsBindingFactory {
                 CustomTag.walletId(key.walletId()),
                 CustomTag.currency(key.currency()),
                 CustomTag.status(key.status()),
-                CustomTag.duration(key.window()),
-                CustomTag.date(key.date().toString())
+                CustomTag.duration(key.window())
         );
     }
 }

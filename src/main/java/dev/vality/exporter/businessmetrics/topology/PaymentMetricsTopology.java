@@ -80,7 +80,6 @@ public class PaymentMetricsTopology extends AbstractMetricsTopology<PaymentEvent
         for (Duration window : MetricsWindows.WINDOWS) {
             metricsAggregator.aggregateWindowed(fullPayments, window, paymentAggregationSpec.create());
         }
-        metricsAggregator.aggregateToday(fullPayments, paymentAggregationSpec.create());
     }
 
     @Override

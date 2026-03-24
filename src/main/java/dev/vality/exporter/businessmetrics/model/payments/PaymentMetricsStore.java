@@ -17,8 +17,7 @@ public class PaymentMetricsStore implements MetricsStore<PaymentMetricKey, Payme
             String shopId,
             String currency,
             String status,
-            String window,
-            LocalDate date
+            String window
     ) {
     }
 
@@ -29,7 +28,6 @@ public class PaymentMetricsStore implements MetricsStore<PaymentMetricKey, Payme
     public void put(
             PaymentMetricKey key,
             String window,
-            LocalDate date,
             PaymentAggregation agg
     ) {
         store.put(
@@ -39,8 +37,7 @@ public class PaymentMetricsStore implements MetricsStore<PaymentMetricKey, Payme
                         key.getShopId(),
                         key.getCurrencyCode(),
                         key.getStatus(),
-                        window,
-                        date
+                        window
                 ),
                 agg
         );

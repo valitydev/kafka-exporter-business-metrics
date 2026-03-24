@@ -28,8 +28,7 @@ public class MetricsWindows {
             "3h", 10800L,
             "6h", 21600L,
             "12h", 43200L,
-            "24h", 86400L,
-            "today", 86400L
+            "24h", 86400L
     );
 
     public static String tag(Duration window) {

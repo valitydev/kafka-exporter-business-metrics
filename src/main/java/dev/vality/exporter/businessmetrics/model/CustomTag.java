@@ -13,7 +13,6 @@ public class CustomTag {
     public static final String STATUS_TAG = "status";
     public static final String WALLET_ID_TAG = "wallet_id";
     public static final String DURATION_TAG = "duration";
-    public static final String DATE_TAG = "date";
 
     public static Tag providerId(String providerId) {
         return Tag.of(PROVIDER_ID_TAG, providerId);
@@ -43,10 +42,6 @@ public class CustomTag {
 
     public static Tag duration(String duration) {
         return Tag.of(DURATION_TAG, duration);
-    }
-
-    public static Tag date(String date) {
-        return Tag.of(DATE_TAG, date);
     }
 
 }

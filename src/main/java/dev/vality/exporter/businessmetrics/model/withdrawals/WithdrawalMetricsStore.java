@@ -17,8 +17,7 @@ public class WithdrawalMetricsStore implements MetricsStore<WithdrawalMetricKey,
             String walletId,
             String currency,
             String status,
-            String window,
-            LocalDate date
+            String window
     ) {
     }
 
@@ -29,7 +28,6 @@ public class WithdrawalMetricsStore implements MetricsStore<WithdrawalMetricKey,
     public void put(
             WithdrawalMetricKey key,
             String window,
-            LocalDate date,
             WithdrawalAggregation agg
     ) {
         store.put(
@@ -39,8 +37,7 @@ public class WithdrawalMetricsStore implements MetricsStore<WithdrawalMetricKey,
                         key.getWalletId(),
                         key.getCurrencyCode(),
                         key.getStatus(),
-                        window,
-                        date
+                        window
                 ),
                 agg
         );

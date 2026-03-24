@@ -79,7 +79,6 @@ public class WithdrawalMetricsTopology extends AbstractMetricsTopology<Withdrawa
         for (Duration window : MetricsWindows.WINDOWS) {
             metricsAggregator.aggregateWindowed(withdrawals, window, withdrawalAggregationSpec.create());
         }
-        metricsAggregator.aggregateToday(withdrawals, withdrawalAggregationSpec.create());
     }
 
     @Override
