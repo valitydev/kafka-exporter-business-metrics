@@ -1,49 +1,68 @@
 package dev.vality.exporter.businessmetrics.topology;
 
+import dev.vality.exporter.businessmetrics.model.MetricsStore;
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricsStore;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentAggregation;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricKey;
+import dev.vality.exporter.businessmetrics.spec.AggregationSpec;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.common.serialization.Serde;
-import org.apache.kafka.streams.kstream.Grouped;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Materialized;
-import org.apache.kafka.streams.kstream.TimeWindows;
+import org.apache.kafka.streams.kstream.*;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.function.Function;
 
 @Component
 @RequiredArgsConstructor
 public class MetricsAggregator {
 
-    private final Serde<PaymentMetricKey> paymentMetricKeySerde;
-    private final Serde<PaymentAggregation> paymentAggregationSerde;
-    private final Serde<PaymentEvent> paymentEventSerde;
-    private final PaymentMetricsStore paymentMetricsStore;
+    public <K, V, A> void aggregateWindowed(
+            KStream<String, V> stream,
+            Duration window,
+            AggregationSpec<K, V, A> spec
+    ) {
+        aggregateWindowed(
+                stream,
+                window,
+                spec.keySerde(),
+                spec.eventSerde(),
+                spec.aggSerde(),
+                spec.initializer(),
+                spec.aggregator(),
+                spec.keyExtractor(),
+                spec.store()
+        );
+    }
 
-    public void aggregate(
-            KStream<String, PaymentEvent> stream,
-            Duration window
+    private <K, V, A> void aggregateWindowed(
+            KStream<String, V> stream,
+            Duration window,
+            Serde<K> keySerde,
+            Serde<V> eventSerde,
+            Serde<A> aggSerde,
+            Initializer<A> initializer,
+            Aggregator<K, V, A> aggregator,
+            Function<V, K> keyExtractor,
+            MetricsStore<K, A> store
     ) {
         stream
-                .groupBy((invoiceId, paymentEvent) -> PaymentMetricKey.from(paymentEvent),
-                        Grouped.with(paymentMetricKeySerde, paymentEventSerde))
-                .windowedBy(TimeWindows.ofSizeAndGrace(window, Duration.ofMinutes(5))
+                .groupBy(
+                        (key, event) -> keyExtractor.apply(event),
+                        Grouped.with(keySerde, eventSerde)
                 )
+                .windowedBy(TimeWindows.ofSizeAndGrace(window, Duration.ofMinutes(5)))
                 .aggregate(
-                        PaymentAggregation::new,
-                        (metricKey, paymentEvent, aggregation) -> aggregation.add(paymentEvent),
-                        Materialized.with(paymentMetricKeySerde, paymentAggregationSerde))
+                        initializer,
+                        aggregator,
+                        Materialized.with(keySerde, aggSerde)
+                )
                 .toStream()
-                .foreach((windowedKey, agg) ->
-                        paymentMetricsStore.put(
+                .foreach((Windowed<K> windowedKey, A agg) ->
+                        store.put(
                                 windowedKey.key(),
                                 MetricsWindows.tag(window),
                                 agg
                         )
                 );
     }
+
 }

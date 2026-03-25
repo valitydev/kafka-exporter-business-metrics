@@ -1,4 +1,4 @@
-package dev.vality.exporter.businessmetrics.converter;
+package dev.vality.exporter.businessmetrics.converter.payment;
 
 import dev.vality.damsel.payment_processing.InvoicePaymentChangePayload;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;

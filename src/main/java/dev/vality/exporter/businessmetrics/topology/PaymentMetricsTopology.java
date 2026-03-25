@@ -1,9 +1,10 @@
 package dev.vality.exporter.businessmetrics.topology;
 
 import dev.vality.damsel.payment_processing.EventPayload;
-import dev.vality.exporter.businessmetrics.converter.InvoiceEventConverterHandler;
+import dev.vality.exporter.businessmetrics.converter.payment.InvoiceEventConverterHandler;
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
+import dev.vality.exporter.businessmetrics.spec.PaymentAggregationSpec;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import dev.vality.machinegun.eventsink.SinkEvent;
 import dev.vality.sink.common.parser.impl.MachineEventParser;
@@ -12,21 +13,29 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.KStream;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class PaymentMetricsTopology {
+@ConditionalOnProperty(
+        prefix = "metrics.topology.payment",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true
+)
+public class PaymentMetricsTopology extends AbstractMetricsTopology<PaymentEvent> {
 
     private final Serde<SinkEvent> sinkEventSerde;
     private final Serde<PaymentEvent> paymentEventSerde;
+    private final PaymentAggregationSpec paymentAggregationSpec;
     private final InvoiceEventConverterHandler invoiceEventConverterHandler;
     private final MachineEventParser<EventPayload> parser;
     private final MetricsAggregator metricsAggregator;
@@ -34,12 +43,12 @@ public class PaymentMetricsTopology {
     private static final String PAYMENT_STARTED_STORE = "payment-started-store";
     private static final String PAYMENT_ROUTE_STORE = "payment-route-store";
     private static final String PAYMENT_STATUS_STORE = "payment-status-store";
-    private static final Set<String> ALLOWED_STATUSES = Set.of("captured", "failed");
 
     @Value("${spring.kafka.topics.invoice}")
     private String invoiceTopic;
 
-    public void buildPaymentTopology(StreamsBuilder streamsBuilder) {
+    @Override
+    public void build(StreamsBuilder streamsBuilder) {
         log.info("Start building payment topology");
         KStream<String, SinkEvent> source =
                 streamsBuilder.stream(
@@ -48,7 +57,6 @@ public class PaymentMetricsTopology {
                                         .withTimestampExtractor(new SinkEventTimestampExtractor()))
                         .peek((key, value) ->
                                 log.debug("Source event received. key={}, value={}", key, value));
-
 
         KStream<String, PaymentEvent> paymentEvents = source
                 .flatMapValues(sinkEvent -> {
@@ -68,92 +76,87 @@ public class PaymentMetricsTopology {
                 .peek((invoiceId, event) ->
                         log.trace("Payment event produced. invoiceId={}, event={}", invoiceId, event));
 
-        KStream<String, PaymentEvent> payments = buildFullPayment(paymentEvents);
+        KStream<String, PaymentEvent> fullPayments = buildFull(paymentEvents);
         for (Duration window : MetricsWindows.WINDOWS) {
-            metricsAggregator.aggregate(payments, window);
+            metricsAggregator.aggregateWindowed(fullPayments, window, paymentAggregationSpec.create());
         }
     }
 
-    private KStream<String, PaymentEvent> buildFullPayment(KStream<String, PaymentEvent> paymentEvents) {
-
-        KStream<String, PaymentEvent> startedEvents = paymentEvents
-                .filter((invoiceId, event) ->
-                        event.getAmount() > 0 && event.getShopId() != null
-                )
-                .peek((invoiceId, event) ->
-                        log.trace("Started event selected. invoiceId={}, amount={}, shopId={}",
-                                invoiceId, event.getAmount(), event.getShopId()));
-
-        KStream<String, PaymentEvent> routeEvents = paymentEvents
-                .filter((invoiceId, event) ->
-                        event.getProviderId() != 0 && event.getTerminalId() != 0
-                                && (event.getAmount() == 0 || event.getShopId() == null)
-                )
-                .peek((invoiceId, event) ->
-                        log.trace("Route event selected. invoiceId={}, providerId={}, terminalId={}",
-                                invoiceId, event.getProviderId(), event.getTerminalId()));
-
-        KStream<String, PaymentEvent> statusEvents = paymentEvents
-                .filter((invoiceId, event) ->
-                        event.getStatus() != null && event.getAmount() == 0
-                )
-                .peek((invoiceId, event) ->
-                        log.trace("Status event selected. invoiceId={}, status={}",
-                                invoiceId, event.getStatus()));
-        KTable<String, PaymentEvent> startedTable = toKTable(startedEvents, PAYMENT_STARTED_STORE);
-        KTable<String, PaymentEvent> routeTable = toKTable(routeEvents, PAYMENT_ROUTE_STORE);
-        KTable<String, PaymentEvent> statusTable = toKTable(statusEvents, PAYMENT_STATUS_STORE);
-
-        KTable<String, PaymentEvent> fullPaymentTable = startedTable
-                .leftJoin(routeTable, this::mergeRoute)
-                .leftJoin(statusTable, this::mergeStatus);
-        return fullPaymentTable.toStream()
-                .filter((invoiceId, paymentEvent) -> isFullPaymentEvent(paymentEvent));
+    @Override
+    protected String getStartedStore() {
+        return PAYMENT_STARTED_STORE;
     }
 
-    private KTable<String, PaymentEvent> toKTable(
-            KStream<String, PaymentEvent> source,
-            String storeName
-    ) {
-        return source
-                .selectKey((invoiceId, paymentEvent) -> paymentEvent.getInvoiceId())
-                .groupByKey(Grouped.with(Serdes.String(), paymentEventSerde))
-                .reduce((oldEvent, newEvent) -> newEvent, Materialized.as(storeName));
+    @Override
+    protected String getRouteStore() {
+        return PAYMENT_ROUTE_STORE;
     }
 
+    @Override
+    protected String getStatusStore() {
+        return PAYMENT_STATUS_STORE;
+    }
 
-    private PaymentEvent mergeRoute(PaymentEvent event, PaymentEvent route) {
+    @Override
+    protected Serde<PaymentEvent> getSerde() {
+        return paymentEventSerde;
+    }
+
+    @Override
+    protected String getKey(PaymentEvent event) {
+        return event.getInvoiceId();
+    }
+
+    @Override
+    protected boolean isStarted(PaymentEvent event) {
+        return event.getAmount() > 0 && event.getShopId() != null;
+    }
+
+    @Override
+    protected boolean isRoute(PaymentEvent event) {
+        return event.getProviderId() != 0 && event.getTerminalId() != 0
+                && (event.getAmount() == 0 || event.getShopId() == null);
+    }
+
+    @Override
+    protected boolean isStatus(PaymentEvent event) {
+        return event.getStatus() != null && event.getAmount() == 0;
+    }
+
+    @Override
+    protected PaymentEvent mergeRoute(PaymentEvent base, PaymentEvent route) {
         if (route != null) {
             if (route.getProviderId() != 0) {
-                event.setProviderId(route.getProviderId());
+                base.setProviderId(route.getProviderId());
             }
             if (route.getTerminalId() != 0) {
-                event.setTerminalId(route.getTerminalId());
+                base.setTerminalId(route.getTerminalId());
             }
         }
-        return event;
+        return base;
     }
 
-    private PaymentEvent mergeStatus(PaymentEvent event, PaymentEvent status) {
+    @Override
+    protected PaymentEvent mergeStatus(PaymentEvent base, PaymentEvent status) {
         if (status != null) {
             if (status.getStatus() != null) {
-                event.setStatus(status.getStatus());
+                base.setStatus(status.getStatus());
             }
             if (status.getCreatedAt() != null) {
-                event.setCreatedAt(status.getCreatedAt());
+                base.setCreatedAt(status.getCreatedAt());
             }
         }
-        return event;
+        return base;
     }
 
-    private static boolean isFullPaymentEvent(PaymentEvent paymentEvent) {
-        return paymentEvent != null
-                && paymentEvent.getTerminalId() != 0
-                && paymentEvent.getProviderId() != 0
-                && paymentEvent.getShopId() != null
-                && paymentEvent.getCurrencyCode() != null
-                && paymentEvent.getAmount() != 0
-                && paymentEvent.getStatus() != null
-                && ALLOWED_STATUSES.contains(paymentEvent.getStatus());
+    @Override
+    protected boolean isFull(PaymentEvent event) {
+        return event != null
+                && event.getTerminalId() != 0
+                && event.getProviderId() != 0
+                && event.getShopId() != null
+                && event.getCurrencyCode() != null
+                && event.getAmount() != 0
+                && event.getStatus() != null;
     }
 }

@@ -1,4 +1,4 @@
-package dev.vality.exporter.businessmetrics.model.payments;
+package dev.vality.exporter.businessmetrics.model.withdrawals;
 
 import dev.vality.exporter.businessmetrics.model.MetricsStore;
 import org.springframework.stereotype.Component;
@@ -9,32 +9,32 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 @Component
-public class PaymentMetricsStore implements MetricsStore<PaymentMetricKey, PaymentAggregation> {
+public class WithdrawalMetricsStore implements MetricsStore<WithdrawalMetricKey, WithdrawalAggregation> {
 
     public record MetricKey(
             int providerId,
             int terminalId,
-            String shopId,
+            String walletId,
             String currency,
             String status,
             String window
     ) {
     }
 
-    private final ConcurrentMap<MetricKey, PaymentAggregation> store =
+    private final ConcurrentMap<MetricKey, WithdrawalAggregation> store =
             new ConcurrentHashMap<>();
 
     @Override
     public void put(
-            PaymentMetricKey key,
+            WithdrawalMetricKey key,
             String window,
-            PaymentAggregation agg
+            WithdrawalAggregation agg
     ) {
         store.put(
                 new MetricKey(
                         key.getProviderId(),
                         key.getTerminalId(),
-                        key.getShopId(),
+                        key.getWalletId(),
                         key.getCurrencyCode(),
                         key.getStatus(),
                         window
@@ -43,7 +43,7 @@ public class PaymentMetricsStore implements MetricsStore<PaymentMetricKey, Payme
         );
     }
 
-    public Map<MetricKey, PaymentAggregation> store() {
+    public Map<MetricKey, WithdrawalAggregation> store() {
         return store;
     }
 

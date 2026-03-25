@@ -1,10 +1,9 @@
 package dev.vality.exporter.businessmetrics.service;
 
-import dev.vality.exporter.businessmetrics.model.CustomTag;
-import dev.vality.exporter.businessmetrics.model.Metric;
+import dev.vality.exporter.businessmetrics.config.properties.MetricsTtlProperties;
+import dev.vality.exporter.businessmetrics.binding.MetricsBinding;
+import dev.vality.exporter.businessmetrics.binding.MetricsBindingRegistry;
 import dev.vality.exporter.businessmetrics.model.MetricsWindows;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentAggregation;
-import dev.vality.exporter.businessmetrics.model.payments.PaymentMetricsStore;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.MultiGauge;
@@ -12,116 +11,112 @@ import io.micrometer.core.instrument.Tags;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class MetricsService {
-    private final PaymentMetricsStore paymentMetricsStore;
+
+    private final MetricsBindingRegistry metricsBindingRegistry;
     private final MeterRegistry registry;
+    private final MetricsTtlProperties props;
 
-    private MultiGauge paymentsCount;
-    private MultiGauge paymentsAmount;
-
-    private static final String PAYMENT_COUNT_SCRAPE = "payments_count_scrape";
-    private static final String PAYMENT_AMOUNT_SCRAPE = "payments_amount_scrape";
+    private List<MetricsBinding<?, ?>> configs;
 
     @PostConstruct
     void init() {
-        paymentsCount = MultiGauge.builder(Metric.PAYMENTS_STATUS_COUNT.getName())
-                .description(Metric.PAYMENTS_STATUS_COUNT.getDescription())
-                .register(registry);
+        configs = metricsBindingRegistry.all();
+        registerScrapes();
+    }
 
-        paymentsAmount = MultiGauge.builder(Metric.PAYMENTS_AMOUNT.getName())
-                .description(Metric.PAYMENTS_AMOUNT.getDescription())
-                .register(registry);
+    private void registerScrapes() {
+        configs.forEach(this::register);
+    }
 
-        registry.gauge(PAYMENT_COUNT_SCRAPE, paymentMetricsStore, store -> {
-            updateMultiGauge(paymentsCount, paymentMetricsStore.store(), PaymentAggregation::getCount);
-            return paymentMetricsStore.store().size();
+    private <K, A> void register(MetricsBinding<K, A> config) {
+
+        registry.gauge(config.countScrapeName(), config.store(), store -> {
+            updateMultiGauge(
+                    config.gaugeCount(),
+                    config.store(),
+                    config.tagsExtractor(),
+                    config.countExtractor()
+            );
+            return config.store().size();
         });
 
-        registry.gauge(PAYMENT_AMOUNT_SCRAPE, paymentMetricsStore, store -> {
-            updateMultiGauge(paymentsAmount, paymentMetricsStore.store(), PaymentAggregation::getAmount);
-            return paymentMetricsStore.store().size();
+        registry.gauge(config.amountScrapeName(), config.store(), store -> {
+            updateMultiGauge(
+                    config.gaugeAmount(),
+                    config.store(),
+                    config.tagsExtractor(),
+                    config.amountExtractor()
+            );
+            return config.store().size();
         });
     }
 
-    public void updateMultiGauge(
-            MultiGauge gauge,
-            Map<PaymentMetricsStore.MetricKey, PaymentAggregation> store,
-            java.util.function.ToDoubleFunction<PaymentAggregation> valueExtractor
-    ) {
+    private <K, A> void updateMultiGauge(MultiGauge gauge, Map<K, A> store,
+                                         Function<K, Tags> tagsExtractor,
+                                         ToDoubleFunction<A> valueExtractor) {
         List<MultiGauge.Row<Number>> rows = store.entrySet().stream()
-                .map(entry ->
-                        MultiGauge.Row.of(getTags(entry.getKey()),
-                                valueExtractor.applyAsDouble(entry.getValue())))
-                .toList();
+                .map(entry -> MultiGauge.Row.of(
+                        tagsExtractor.apply(entry.getKey()),
+                        valueExtractor.applyAsDouble(entry.getValue()))).toList();
         gauge.register(rows, true);
     }
 
-    @Value("${metrics.ttl.seconds}")
-    private long defaultTtlSeconds;
-
-    @Value("${metrics.ttl.min-lifetime-seconds}")
-    private long minLifetimeSeconds;
-
-    @Value("${metrics.ttl.cleaner.enabled}")
-    private boolean enabledClean;
-
     @Scheduled(fixedDelayString = "${metrics.ttl.cleaner.ms}")
     private void cleanOldMetrics() {
-        if (!enabledClean) {
+        if (!props.getCleaner().isEnabled()) {
             return;
         }
         log.debug("Start clean old metrics");
+        configs.forEach(this::cleanStore);
+
+    }
+
+    private <K, A> void cleanStore(MetricsBinding<K, A> config) {
+
         Instant now = Instant.now();
 
-        paymentMetricsStore.store().forEach((key, aggregation) -> {
-            if (aggregation.getLastUpdated().plusSeconds(minLifetimeSeconds).isAfter(now)) {
+        config.store().forEach((key, aggregation) -> {
+
+            Instant lastUpdated = config.lastUpdatedExtractor().apply(aggregation);
+
+            if (lastUpdated.plusSeconds(props.getMinLifetimeSeconds()).isAfter(now)) {
                 return;
             }
 
-            long ttl = MetricsWindows.WINDOW_TTL_SECONDS.getOrDefault(key.window(), defaultTtlSeconds);
+            long ttl = MetricsWindows.WINDOW_TTL_SECONDS
+                    .getOrDefault(config.windowExtractor().apply(key), props.getSeconds());
 
-            boolean expired = aggregation.getLastUpdated().plusSeconds(ttl).isBefore(now);
-            if (expired) {
-                Tags tags = getTags(key);
+            if (lastUpdated.plusSeconds(ttl).isBefore(now)) {
 
-                for (String metricName : List.of(
-                        Metric.PAYMENTS_STATUS_COUNT.getName(),
-                        Metric.PAYMENTS_AMOUNT.getName())) {
+                Tags tags = config.tagsExtractor().apply(key);
 
+                for (String metricName : config.metricNames()) {
                     Meter meter = registry.find(metricName)
                             .tags(tags)
                             .meter();
+
                     if (meter != null) {
                         registry.remove(meter);
                     }
                 }
 
-                paymentMetricsStore.remove(key);
+                config.remover().accept(key);
 
-                log.info("Removed expired metric for key={} with TTL={}s", key, ttl);
+                log.info("Removed expired metric key={} ttl={}", key, ttl);
             }
         });
-    }
-
-    private Tags getTags(PaymentMetricsStore.MetricKey key) {
-        return Tags.of(
-                CustomTag.providerId(String.valueOf(key.providerId())),
-                CustomTag.terminalId(String.valueOf(key.terminalId())),
-                CustomTag.shopId(key.shopId()),
-                CustomTag.currency(key.currency()),
-                CustomTag.status(key.status()),
-                CustomTag.duration(key.window())
-        );
     }
 }
