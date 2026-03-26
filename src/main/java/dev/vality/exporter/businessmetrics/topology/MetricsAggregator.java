@@ -6,6 +6,7 @@ import dev.vality.exporter.businessmetrics.spec.AggregationSpec;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.kstream.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -14,6 +15,9 @@ import java.util.function.Function;
 @Component
 @RequiredArgsConstructor
 public class MetricsAggregator {
+
+    @Value("${metrics.windowing.update-interval-sec}")
+    long updateInterval;
 
     public <K, V, A> void aggregateWindowed(
             KStream<String, V> stream,
@@ -49,7 +53,8 @@ public class MetricsAggregator {
                         (key, event) -> keyExtractor.apply(event),
                         Grouped.with(keySerde, eventSerde)
                 )
-                .windowedBy(TimeWindows.ofSizeAndGrace(window, Duration.ofMinutes(5)))
+                .windowedBy(TimeWindows.ofSizeWithNoGrace(window)
+                        .advanceBy(Duration.ofSeconds(updateInterval)))
                 .aggregate(
                         initializer,
                         aggregator,
