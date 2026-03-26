@@ -2,7 +2,6 @@ package dev.vality.exporter.businessmetrics.topology;
 
 import dev.vality.damsel.payment_processing.EventPayload;
 import dev.vality.exporter.businessmetrics.converter.payment.InvoiceEventConverterHandler;
-import dev.vality.exporter.businessmetrics.model.MetricsWindows;
 import dev.vality.exporter.businessmetrics.model.payments.PaymentEvent;
 import dev.vality.exporter.businessmetrics.spec.PaymentAggregationSpec;
 import dev.vality.machinegun.eventsink.MachineEvent;
@@ -19,7 +18,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
 import java.util.List;
 
 @Component
@@ -77,9 +75,7 @@ public class PaymentMetricsTopology extends AbstractMetricsTopology<PaymentEvent
                         log.trace("Payment event produced. invoiceId={}, event={}", invoiceId, event));
 
         KStream<String, PaymentEvent> fullPayments = buildFull(paymentEvents);
-        for (Duration window : MetricsWindows.WINDOWS) {
-            metricsAggregator.aggregateWindowed(fullPayments, window, paymentAggregationSpec.create());
-        }
+        metricsAggregator.aggregateSliding(fullPayments, paymentAggregationSpec.create());
     }
 
     @Override

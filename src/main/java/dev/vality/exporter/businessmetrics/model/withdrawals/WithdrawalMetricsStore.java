@@ -3,7 +3,6 @@ package dev.vality.exporter.businessmetrics.model.withdrawals;
 import dev.vality.exporter.businessmetrics.model.MetricsStore;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;

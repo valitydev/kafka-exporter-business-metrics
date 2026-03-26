@@ -1,12 +1,10 @@
 package dev.vality.exporter.businessmetrics.topology;
 
 import dev.vality.exporter.businessmetrics.model.MetricsStore;
-import dev.vality.exporter.businessmetrics.model.MetricsWindows;
 import dev.vality.exporter.businessmetrics.spec.AggregationSpec;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.kstream.*;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -16,17 +14,14 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class MetricsAggregator {
 
-    @Value("${metrics.windowing.update-interval-sec}")
-    long updateInterval;
+    private static final Duration SLIDING_WINDOW_24H = Duration.ofHours(24);
 
-    public <K, V, A> void aggregateWindowed(
+    public <K, V, A> void aggregateSliding(
             KStream<String, V> stream,
-            Duration window,
             AggregationSpec<K, V, A> spec
     ) {
-        aggregateWindowed(
+        aggregateSliding(
                 stream,
-                window,
                 spec.keySerde(),
                 spec.eventSerde(),
                 spec.aggSerde(),
@@ -37,9 +32,8 @@ public class MetricsAggregator {
         );
     }
 
-    private <K, V, A> void aggregateWindowed(
+    private <K, V, A> void aggregateSliding(
             KStream<String, V> stream,
-            Duration window,
             Serde<K> keySerde,
             Serde<V> eventSerde,
             Serde<A> aggSerde,
@@ -49,25 +43,12 @@ public class MetricsAggregator {
             MetricsStore<K, A> store
     ) {
         stream
-                .groupBy(
-                        (key, event) -> keyExtractor.apply(event),
-                        Grouped.with(keySerde, eventSerde)
-                )
-                .windowedBy(TimeWindows.ofSizeWithNoGrace(window)
-                        .advanceBy(Duration.ofSeconds(updateInterval)))
-                .aggregate(
-                        initializer,
-                        aggregator,
-                        Materialized.with(keySerde, aggSerde)
-                )
+                .groupBy((key, event) -> keyExtractor.apply(event), Grouped.with(keySerde, eventSerde))
+                .windowedBy(SlidingWindows.ofTimeDifferenceWithNoGrace(SLIDING_WINDOW_24H))
+                .aggregate(initializer, aggregator, Materialized.with(keySerde, aggSerde))
                 .toStream()
-                .foreach((Windowed<K> windowedKey, A agg) ->
-                        store.put(
-                                windowedKey.key(),
-                                MetricsWindows.tag(window),
-                                agg
-                        )
+                .foreach((windowedKey, agg) ->
+                        store.put(windowedKey.key(), "24h", agg)
                 );
     }
-
 }

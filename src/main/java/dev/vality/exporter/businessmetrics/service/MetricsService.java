@@ -3,7 +3,6 @@ package dev.vality.exporter.businessmetrics.service;
 import dev.vality.exporter.businessmetrics.config.properties.MetricsTtlProperties;
 import dev.vality.exporter.businessmetrics.binding.MetricsBinding;
 import dev.vality.exporter.businessmetrics.binding.MetricsBindingRegistry;
-import dev.vality.exporter.businessmetrics.model.MetricsWindows;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.MultiGauge;
@@ -14,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -46,21 +46,21 @@ public class MetricsService {
         registry.gauge(config.countScrapeName(), config.store(), store -> {
             updateMultiGauge(
                     config.gaugeCount(),
-                    config.store(),
+                    store,
                     config.tagsExtractor(),
                     config.countExtractor()
             );
-            return config.store().size();
+            return store.size();
         });
 
         registry.gauge(config.amountScrapeName(), config.store(), store -> {
             updateMultiGauge(
                     config.gaugeAmount(),
-                    config.store(),
+                    store,
                     config.tagsExtractor(),
                     config.amountExtractor()
             );
-            return config.store().size();
+            return store.size();
         });
     }
 
@@ -88,16 +88,11 @@ public class MetricsService {
 
         Instant now = Instant.now();
 
+        long ttl = Duration.ofHours(25).getSeconds();
+
         config.store().forEach((key, aggregation) -> {
 
             Instant lastUpdated = config.lastUpdatedExtractor().apply(aggregation);
-
-            if (lastUpdated.plusSeconds(props.getMinLifetimeSeconds()).isAfter(now)) {
-                return;
-            }
-
-            long ttl = MetricsWindows.WINDOW_TTL_SECONDS
-                    .getOrDefault(config.windowExtractor().apply(key), props.getSeconds());
 
             if (lastUpdated.plusSeconds(ttl).isBefore(now)) {
 
