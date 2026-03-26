@@ -52,6 +52,8 @@ spring:
         fixed.rate.timeout.ms: 60000
 
 metrics:
+  windowing:
+    update-interval-sec: 60
   ttl:
     seconds: 3600
     min-lifetime-seconds: 120

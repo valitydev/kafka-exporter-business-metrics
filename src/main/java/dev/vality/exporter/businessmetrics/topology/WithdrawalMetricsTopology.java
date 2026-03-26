@@ -1,7 +1,6 @@
 package dev.vality.exporter.businessmetrics.topology;
 
 import dev.vality.exporter.businessmetrics.converter.withdrawal.WithdrawalEventConverterHandler;
-import dev.vality.exporter.businessmetrics.model.MetricsWindows;
 import dev.vality.exporter.businessmetrics.model.withdrawals.WithdrawalEvent;
 import dev.vality.exporter.businessmetrics.spec.WithdrawalAggregationSpec;
 import dev.vality.fistful.withdrawal.TimestampedChange;
@@ -19,7 +18,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
 import java.util.List;
 
 @Component
@@ -76,9 +74,8 @@ public class WithdrawalMetricsTopology extends AbstractMetricsTopology<Withdrawa
                         log.trace("Withdrawal event produced. withdrawalId={}, event={}", withdrawalId, event));
 
         KStream<String, WithdrawalEvent> withdrawals = buildFull(withdrawalEvents);
-        for (Duration window : MetricsWindows.WINDOWS) {
-            metricsAggregator.aggregateWindowed(withdrawals, window, withdrawalAggregationSpec.create());
-        }
+        metricsAggregator.aggregateSliding(withdrawals, withdrawalAggregationSpec.create());
+
     }
 
     @Override
