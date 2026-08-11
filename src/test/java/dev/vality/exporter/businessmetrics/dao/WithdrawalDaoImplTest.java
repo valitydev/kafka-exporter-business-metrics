@@ -1,6 +1,5 @@
 package dev.vality.exporter.businessmetrics.dao;
 
-import dev.vality.exporter.businessmetrics.config.PostgresqlSpringBootITest;
 import dev.vality.exporter.businessmetrics.domain.enums.WithdrawalStatus;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.WithdrawalData;
 import dev.vality.exporter.businessmetrics.utils.TestData;
@@ -8,13 +7,14 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
 
 import static dev.vality.exporter.businessmetrics.domain.Tables.WITHDRAWAL_DATA;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-@PostgresqlSpringBootITest
+@SpringBootTest
 public class WithdrawalDaoImplTest {
     @Autowired
     private WithdrawalDao withdrawalDao;
