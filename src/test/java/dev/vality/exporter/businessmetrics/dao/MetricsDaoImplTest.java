@@ -77,7 +77,7 @@ public class MetricsDaoImplTest {
 
         assertThat(rows).hasSize(1);
 
-        PaymentStatusMetricRow row = rows.get(0);
+        PaymentStatusMetricRow row = rows.getFirst();
 
         assertThat(row.getMetrics().get(MetricWindow.M5).getCount()).isEqualTo(1L);
         assertThat(row.getMetrics().get(MetricWindow.M5).getAmount()).isEqualTo(100L);
