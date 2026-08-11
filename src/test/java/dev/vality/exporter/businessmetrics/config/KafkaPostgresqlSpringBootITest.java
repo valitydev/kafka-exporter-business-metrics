@@ -1,7 +1,7 @@
 package dev.vality.exporter.businessmetrics.config;
 
 import dev.vality.testcontainers.annotations.postgresql.PostgresqlTestcontainerSingleton;
-import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
@@ -12,11 +12,8 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@SpringBootTest
 @PostgresqlTestcontainerSingleton
-@EmbeddedKafka(partitions = 1, topics = {
-        "invoice-test",
-        "withdrawal-test"
-})
 @TestPropertySource(properties = {
         "spring.kafka.bootstrap-servers=${spring.embedded.kafka.brokers}",
         "spring.kafka.consumer.group-id=kafka-test",

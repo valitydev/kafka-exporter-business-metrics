@@ -1,5 +1,6 @@
 package dev.vality.exporter.businessmetrics.dao;
 
+import dev.vality.exporter.businessmetrics.config.PostgresqlSpringBootITest;
 import dev.vality.exporter.businessmetrics.domain.enums.InvoicePaymentStatus;
 import dev.vality.exporter.businessmetrics.domain.enums.WithdrawalStatus;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.InvoicePaymentData;
@@ -10,13 +11,11 @@ import dev.vality.exporter.businessmetrics.dto.PaymentStatusMetricRow;
 import dev.vality.exporter.businessmetrics.dto.WithdrawalStatusMetricRow;
 import dev.vality.exporter.businessmetrics.model.MetricWindow;
 import dev.vality.exporter.businessmetrics.utils.TestData;
-import dev.vality.testcontainers.annotations.postgresql.PostgresqlTestcontainer;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,8 +24,7 @@ import static dev.vality.exporter.businessmetrics.domain.Tables.INVOICE_PAYMENT_
 import static dev.vality.exporter.businessmetrics.domain.Tables.WITHDRAWAL_DATA;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-@PostgresqlTestcontainer
-@SpringBootTest
+@PostgresqlSpringBootITest
 public class MetricsDaoImplTest {
 
     @Autowired
