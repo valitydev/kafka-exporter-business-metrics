@@ -230,9 +230,9 @@ public class MetricsDaoImplTest {
 
         assertThat(rows).hasSize(1);
 
-        AssertionsForClassTypes.assertThat(rows.get(0)
+        AssertionsForClassTypes.assertThat(rows.getFirst()
                 .getMetrics().get(MetricWindow.H24).getCount()).isEqualTo(1L);
-        AssertionsForClassTypes.assertThat(rows.get(0)
+        AssertionsForClassTypes.assertThat(rows.getFirst()
                 .getMetrics().get(MetricWindow.H24).getAmount()).isEqualTo(200L);
     }
 }

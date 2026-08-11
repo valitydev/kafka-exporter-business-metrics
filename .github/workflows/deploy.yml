@@ -11,8 +11,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  deploy:
-    uses: valitydev/java-workflow/.github/workflows/maven-service-deploy.yml@v4
+  build-and-deploy:
+    uses: valitydev/java-workflow/.github/workflows/maven-service-deploy.yml@v3
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       mm-webhook-url: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
