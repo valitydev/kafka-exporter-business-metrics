@@ -22,13 +22,12 @@
         <server.port>8022</server.port>
         <management.port>8023</management.port>
         <exposed.ports>${server.port} ${management.port}</exposed.ports>
-        <db.url>jdbc:postgresql://localhost:5432/exporter_metrics</db.url>
+        <db.name>exporter_metrics</db.name>
+        <db.port>5432</db.port>
+        <db.url>jdbc:postgresql://localhost:${db.port}/${db.name}</db.url>
         <db.user>postgres</db.user>
         <db.password>postgres</db.password>
-        <db.name>exporter_metrics</db.name>
         <db.schema>kebm</db.schema>
-        <local.pg.url>jdbc:postgresql://localhost:5432/exporter_metrics</local.pg.url>
-        <local.pg.port>5432</local.pg.port>
     </properties>
 
     <dependencies>
@@ -225,7 +224,7 @@
                 <artifactId>pg-embedded-plugin</artifactId>
                 <version>2.0.0</version>
                 <configuration>
-                    <port>${local.pg.port}</port>
+                    <port>${db.port}</port>
                     <dbName>${db.name}</dbName>
                     <schemas>
                         <schema>${db.schema}</schema>
@@ -252,7 +251,7 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
                 <configuration>
-                    <url>${local.pg.url}</url>
+                    <url>${db.url}</url>
                     <user>${db.user}</user>
                     <password>${db.password}</password>
                     <schemas>
@@ -282,7 +281,7 @@
                 <configuration>
                     <jdbc>
                         <driver>org.postgresql.Driver</driver>
-                        <url>${local.pg.url}</url>
+                        <url>${db.url}</url>
                         <user>${db.user}</user>
                         <password>${db.password}</password>
                     </jdbc>
@@ -296,9 +295,7 @@
                         <database>
                             <name>org.jooq.meta.postgres.PostgresDatabase</name>
                             <includes>.*</includes>
-                            <excludes>
-                                schema_version|.*func|get_adjustment.*|get_cashflow.*|get_payment.*|get_payout.*|get_refund.*|.*_new|.*_20.*
-                            </excludes>
+                            <excludes>schema_version|flyway_schema_history</excludes>
                             <inputSchema>${db.schema}</inputSchema>
                         </database>
                         <target>
