@@ -67,10 +67,10 @@ kafka:
     withdrawal-concurrency: 7
   topics:
     invoice:
-      id: mg-invoice-100-2
+      id: invoice-test
       enabled: false
     withdrawal:
-      id: mg-events-ff-withdrawal
+      id: withdrawal-test
       enabled: false
 
 service:
