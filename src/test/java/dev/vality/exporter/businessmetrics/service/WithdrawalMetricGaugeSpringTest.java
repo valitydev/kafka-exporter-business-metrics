@@ -1,5 +1,6 @@
 package dev.vality.exporter.businessmetrics.service;
 
+import dev.vality.exporter.businessmetrics.config.PostgresqlSpringBootITest;
 import dev.vality.exporter.businessmetrics.domain.enums.WithdrawalStatus;
 import dev.vality.exporter.businessmetrics.dto.WithdrawalStatusMetricRow;
 import dev.vality.exporter.businessmetrics.factory.MetricGaugeFactory;
@@ -20,6 +21,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+@PostgresqlSpringBootITest
 @SpringBootTest(classes = WithdrawalMetricGaugeSpringTest.TestConfig.class)
 public class WithdrawalMetricGaugeSpringTest {
     @TestConfiguration

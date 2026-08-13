@@ -1,5 +1,6 @@
 package dev.vality.exporter.businessmetrics.service;
 
+import dev.vality.exporter.businessmetrics.config.PostgresqlSpringBootITest;
 import dev.vality.exporter.businessmetrics.domain.enums.InvoicePaymentStatus;
 import dev.vality.exporter.businessmetrics.dto.PaymentStatusMetricRow;
 import dev.vality.exporter.businessmetrics.dto.PaymentTransactionMetricRow;
@@ -21,6 +22,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+@PostgresqlSpringBootITest
 @SpringBootTest(classes = PaymentMetricGaugeSpringTest.TestConfig.class)
 public class PaymentMetricGaugeSpringTest {
     @TestConfiguration
