@@ -2,9 +2,9 @@ package dev.vality.exporter.businessmetrics.service;
 
 import dev.vality.exporter.businessmetrics.dto.PaymentStatusMetricRow;
 import dev.vality.exporter.businessmetrics.dto.PaymentTransactionMetricRow;
-import dev.vality.exporter.businessmetrics.model.Metric;
 import dev.vality.exporter.businessmetrics.factory.MetricGaugeFactory;
 import dev.vality.exporter.businessmetrics.factory.MetricTagsFactory;
+import dev.vality.exporter.businessmetrics.model.Metric;
 import io.micrometer.core.instrument.MultiGauge;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;

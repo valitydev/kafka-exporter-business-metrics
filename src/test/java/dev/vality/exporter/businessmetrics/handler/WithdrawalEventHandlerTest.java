@@ -1,6 +1,7 @@
 package dev.vality.exporter.businessmetrics.handler;
 
 import dev.vality.dao.DaoException;
+import dev.vality.exporter.businessmetrics.config.PostgresqlSpringBootITest;
 import dev.vality.exporter.businessmetrics.dao.WithdrawalDao;
 import dev.vality.exporter.businessmetrics.domain.enums.WithdrawalStatus;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.WithdrawalData;
@@ -16,7 +17,6 @@ import dev.vality.machinegun.eventsink.MachineEvent;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDateTime;
@@ -27,7 +27,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@PostgresqlSpringBootITest
 class WithdrawalEventHandlerTest {
 
     @MockitoBean

@@ -4,6 +4,7 @@ import dev.vality.damsel.payment_processing.EventPayload;
 import dev.vality.damsel.payment_processing.InvoiceChange;
 import dev.vality.damsel.payment_processing.InvoicePaymentChange;
 import dev.vality.dao.DaoException;
+import dev.vality.exporter.businessmetrics.config.PostgresqlSpringBootITest;
 import dev.vality.exporter.businessmetrics.dao.InvoicePaymentDao;
 import dev.vality.exporter.businessmetrics.domain.enums.InvoicePaymentStatus;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.InvoicePaymentData;
@@ -18,7 +19,6 @@ import dev.vality.sink.common.serialization.impl.PaymentEventPayloadDeserializer
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDateTime;
@@ -28,7 +28,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@PostgresqlSpringBootITest
 class InvoicePaymentEventHandlerTest {
 
     @MockitoBean
