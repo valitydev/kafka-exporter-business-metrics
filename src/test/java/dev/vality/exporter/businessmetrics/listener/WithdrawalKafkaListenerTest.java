@@ -6,8 +6,11 @@ import dev.vality.exporter.businessmetrics.domain.tables.pojos.WithdrawalData;
 import dev.vality.exporter.businessmetrics.utils.TestData;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import dev.vality.machinegun.eventsink.SinkEvent;
+import dev.vality.testcontainers.annotations.kafka.config.KafkaProducer;
+import org.apache.thrift.TBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.Duration;
@@ -18,8 +21,11 @@ import static org.awaitility.Awaitility.await;
 @KafkaPostgresqlSpringBootITest
 class WithdrawalKafkaListenerTest {
 
+    @Value("${kafka.topics.withdrawal.id}")
+    private String topic;
+
     @Autowired
-    private KafkaTemplate<String, SinkEvent> kafkaTemplate;
+    private KafkaProducer<TBase<?, ?>> testThriftKafkaProducer;
 
     @Autowired
     private WithdrawalDao withdrawalDao;
@@ -34,13 +40,7 @@ class WithdrawalKafkaListenerTest {
         SinkEvent sinkEvent = new SinkEvent();
         sinkEvent.setEvent(machineEvent);
 
-        kafkaTemplate
-                .send(
-                        "withdrawal-test",
-                        withdrawalId,
-                        sinkEvent
-                )
-                .get();
+        testThriftKafkaProducer.send(topic, sinkEvent);
 
         await()
                 .atMost(Duration.ofSeconds(20))
