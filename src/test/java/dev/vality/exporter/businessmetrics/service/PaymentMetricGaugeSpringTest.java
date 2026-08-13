@@ -12,10 +12,6 @@ import dev.vality.exporter.businessmetrics.model.TimeWindowMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Import;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,13 +19,7 @@ import java.util.UUID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @PostgresqlSpringBootITest
-@SpringBootTest(classes = PaymentMetricGaugeSpringTest.TestConfig.class)
 public class PaymentMetricGaugeSpringTest {
-    @TestConfiguration
-    @EnableAutoConfiguration
-    @Import({MetricGaugeFactory.class, MetricTagsFactory.class, PaymentMetricGaugeWriter.class})
-    static class TestConfig {
-    }
 
     @Autowired
     private PaymentMetricGaugeWriter writer;

@@ -11,10 +11,6 @@ import dev.vality.exporter.businessmetrics.model.TimeWindowMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Import;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,13 +18,7 @@ import java.util.UUID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @PostgresqlSpringBootITest
-@SpringBootTest(classes = WithdrawalMetricGaugeSpringTest.TestConfig.class)
 public class WithdrawalMetricGaugeSpringTest {
-    @TestConfiguration
-    @EnableAutoConfiguration
-    @Import({MetricGaugeFactory.class, MetricTagsFactory.class, WithdrawalMetricGaugeWriter.class})
-    static class TestConfig {
-    }
 
     @Autowired
     private WithdrawalMetricGaugeWriter writer;
