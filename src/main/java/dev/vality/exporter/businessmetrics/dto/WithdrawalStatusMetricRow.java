@@ -25,6 +25,7 @@ public class WithdrawalStatusMetricRow {
     private String walletName;
 
     private String currencyCode;
+    private String currencyExponent;
 
     private WithdrawalStatus withdrawalStatus;
 

@@ -1,14 +1,11 @@
 package dev.vality.exporter.businessmetrics.service;
 
-import dev.vality.exporter.businessmetrics.config.properties.MetricsProperties;
 import dev.vality.exporter.businessmetrics.dao.MetricsDao;
 import dev.vality.exporter.businessmetrics.resolver.MetricLabelResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -22,15 +19,15 @@ public class MetricsGaugeService {
     private final PaymentMetricGaugeWriter paymentWriter;
 
     private final WithdrawalMetricGaugeWriter withdrawalWriter;
-    private final MetricsProperties metricsProperties;
 
 
-    @Scheduled(fixedDelayString = "${exporter.metrics.refresh-delay-ms}")
+    @Scheduled(fixedRateString = "${exporter.metrics.refresh-delay-ms}")
     public void refresh() {
         try {
             refreshPayments();
-            refreshTransactions();
+            refreshTransactionsPayments();
             refreshWithdrawals();
+            refreshTransactionsWithdrawals();
         } catch (Exception e) {
             log.error(
                     "Cannot refresh metrics",
@@ -48,12 +45,9 @@ public class MetricsGaugeService {
         paymentWriter.writeStatus(rows);
     }
 
-    private void refreshTransactions() {
+    private void refreshTransactionsPayments() {
         var rows =
-                metricsDao.getPaymentTransactionMetrics(
-                                LocalDateTime.now()
-                                        .minusSeconds(metricsProperties.getTransactionLookbackSec())
-                        )
+                metricsDao.getPaymentTransactionMetrics()
                         .stream()
                         .map(resolver::resolve)
                         .toList();
@@ -66,6 +60,15 @@ public class MetricsGaugeService {
                         .stream()
                         .map(resolver::resolve)
                         .toList();
-        withdrawalWriter.write(rows);
+        withdrawalWriter.writeStatus(rows);
+    }
+
+    private void refreshTransactionsWithdrawals() {
+        var rows =
+                metricsDao.getWithdrawalTransactionMetrics()
+                        .stream()
+                        .map(resolver::resolve)
+                        .toList();
+        withdrawalWriter.writeTransactions(rows);
     }
 }

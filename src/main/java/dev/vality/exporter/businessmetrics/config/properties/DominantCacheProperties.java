@@ -14,6 +14,7 @@ public class DominantCacheProperties {
     private CacheConfig shops;
     private CacheConfig parties;
     private CacheConfig wallets;
+    private CacheConfig currencies;
 
     @Getter
     @Setter

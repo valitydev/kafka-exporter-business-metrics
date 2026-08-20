@@ -38,7 +38,7 @@ public class DominantCacheServiceTest {
                 .thenReturn(CompletableFuture.completedFuture("Provider"));
 
         String result =
-                service.getProviderName(new ProviderRef(21));
+                service.getProviderName(new ProviderRef(21)).resultNow();
 
         assertThat(result).isEqualTo("Provider");
 
@@ -52,7 +52,7 @@ public class DominantCacheServiceTest {
                 .thenReturn(CompletableFuture.completedFuture("Terminal"));
 
         String result =
-                service.getTerminalName(new TerminalRef(35));
+                service.getTerminalName(new TerminalRef(35)).resultNow();
 
         assertThat(result).isEqualTo("Terminal");
     }
@@ -66,7 +66,7 @@ public class DominantCacheServiceTest {
                 );
 
         String result =
-                service.getShopName(new ShopConfigRef("shop-1"));
+                service.getShopName(new ShopConfigRef("shop-1")).resultNow();
 
         assertThat(result).isEqualTo("Shop");
     }
@@ -85,7 +85,7 @@ public class DominantCacheServiceTest {
                 .thenReturn(future);
 
         String result =
-                service.getProviderName(new ProviderRef(21));
+                service.getProviderName(new ProviderRef(21)).resultNow();
 
         assertThat(result).isEqualTo("unknown");
     }
@@ -104,7 +104,7 @@ public class DominantCacheServiceTest {
                 .thenReturn(future);
 
         assertThat(
-                service.getTerminalName(new TerminalRef(35))
+                service.getTerminalName(new TerminalRef(35)).resultNow()
         ).isEqualTo("unknown");
     }
 }

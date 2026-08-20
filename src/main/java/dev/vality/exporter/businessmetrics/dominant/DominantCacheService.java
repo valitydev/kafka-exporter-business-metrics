@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -23,48 +23,41 @@ public class DominantCacheService {
 
     private final AsyncLoadingCache<String, String> walletsCache;
 
-    public String getProviderName(ProviderRef ref) {
-        try {
-            return providersCache.get(ref.getId()).join();
-        } catch (CompletionException e) {
-            log.warn("Cannot resolve provider {}", ref.getId(), e);
-            return "unknown";
-        }
+    private final AsyncLoadingCache<String, String> currencyCache;
+
+    public CompletableFuture<String> getProviderName(ProviderRef ref) {
+        return get(providersCache, ref.getId(), "provider");
     }
 
-    public String getTerminalName(TerminalRef ref) {
-        try {
-            return terminalsCache.get(ref.getId()).join();
-        } catch (CompletionException e) {
-            log.warn("Cannot resolve terminal {}", ref.getId(), e);
-            return "unknown";
-        }
+    public CompletableFuture<String> getTerminalName(TerminalRef ref) {
+        return get(terminalsCache, ref.getId(), "terminal");
     }
 
-    public String getShopName(ShopConfigRef ref) {
-        try {
-            return shopsCache.get(ref.getId()).join();
-        } catch (CompletionException e) {
-            log.warn("Cannot resolve shop {}", ref.getId(), e);
-            return "unknown";
-        }
+    public CompletableFuture<String> getShopName(ShopConfigRef ref) {
+        return get(shopsCache, ref.getId(), "shop");
     }
 
-    public String getPartyName(PartyConfigRef ref) {
-        try {
-            return partiesCache.get(ref.getId()).join();
-        } catch (CompletionException e) {
-            log.warn("Cannot resolve party {}", ref.getId(), e);
-            return "unknown";
-        }
+    public CompletableFuture<String> getPartyName(PartyConfigRef ref) {
+        return get(partiesCache, ref.getId(), "party");
     }
 
-    public String getWalletName(WalletConfigRef ref) {
-        try {
-            return walletsCache.get(ref.getId()).join();
-        } catch (CompletionException e) {
-            log.warn("Cannot resolve wallet {}", ref.getId(), e);
-            return "unknown";
-        }
+    public CompletableFuture<String> getWalletName(WalletConfigRef ref) {
+        return get(walletsCache, ref.getId(), "wallet");
+    }
+
+    public CompletableFuture<String> getCurrencyExponent(String ref) {
+        return get(currencyCache, ref, "currency");
+    }
+
+    private <K> CompletableFuture<String> get(
+            AsyncLoadingCache<K, String> cache,
+            K key,
+            String entity
+    ) {
+        return cache.get(key)
+                .exceptionally(e -> {
+                    log.warn("Cannot resolve {} {}", entity, key, e);
+                    return "unknown";
+                });
     }
 }

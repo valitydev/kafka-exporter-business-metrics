@@ -77,4 +77,17 @@ public class CacheConfig {
                 )
                 .buildAsync(new WalletLoader(client));
     }
+
+    @Bean
+    public AsyncLoadingCache<String, String> currencyCache(
+            RepositoryClientSrv.Iface client
+    ) {
+        return Caffeine.newBuilder()
+                .maximumSize(cacheProperties.getCurrencies().getPoolSize())
+                .refreshAfterWrite(
+                        cacheProperties.getCurrencies().getTtlSec(),
+                        TimeUnit.SECONDS
+                )
+                .buildAsync(new CurrencyLoader(client));
+    }
 }

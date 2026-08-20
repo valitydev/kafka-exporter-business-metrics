@@ -55,7 +55,7 @@ public class PaymentMetricGaugeWriter {
         transactionGauge.register(
                 rows.stream()
                         .map(row -> MultiGauge.Row.of(
-                                tags.transactionTags(row),
+                                tags.transactionPaymentTags(row),
                                 row.getCount()
                         ))
                         .toList(),

@@ -3,6 +3,7 @@ package dev.vality.exporter.businessmetrics.factory;
 import dev.vality.exporter.businessmetrics.dto.PaymentStatusMetricRow;
 import dev.vality.exporter.businessmetrics.dto.PaymentTransactionMetricRow;
 import dev.vality.exporter.businessmetrics.dto.WithdrawalStatusMetricRow;
+import dev.vality.exporter.businessmetrics.dto.WithdrawalTransactionMetricRow;
 import io.micrometer.core.instrument.Tags;
 import org.springframework.stereotype.Component;
 
@@ -44,6 +45,9 @@ public class MetricTagsFactory {
                 "currency",
                 row.getCurrencyCode(),
 
+                "currency_exponent",
+                row.getCurrencyExponent(),
+
                 "status",
                 row.getPaymentStatus().name(),
 
@@ -53,7 +57,7 @@ public class MetricTagsFactory {
     }
 
 
-    public Tags transactionTags(
+    public Tags transactionPaymentTags(
             PaymentTransactionMetricRow row
     ) {
 
@@ -84,7 +88,48 @@ public class MetricTagsFactory {
                 row.getShopName(),
 
                 "currency",
-                row.getCurrencyCode()
+                row.getCurrencyCode(),
+
+                "currency_exponent",
+                row.getCurrencyExponent()
+        );
+    }
+
+    public Tags transactionWithdrawalTags(
+            WithdrawalTransactionMetricRow row
+    ) {
+
+        return Tags.of(
+
+                "provider_id",
+                String.valueOf(row.getProviderId()),
+
+                "provider_name",
+                row.getProviderName(),
+
+                "terminal_id",
+                String.valueOf(row.getTerminalId()),
+
+                "terminal_name",
+                row.getTerminalName(),
+
+                "party_id",
+                String.valueOf(row.getPartyId()),
+
+                "party_name",
+                row.getPartyName(),
+
+                "wallet_id",
+                row.getWalletId(),
+
+                "wallet_name",
+                row.getWalletName(),
+
+                "currency",
+                row.getCurrencyCode(),
+
+                "currency_exponent",
+                row.getCurrencyExponent()
         );
     }
 
@@ -122,6 +167,9 @@ public class MetricTagsFactory {
 
                 "currency",
                 row.getCurrencyCode(),
+
+                "currency_exponent",
+                row.getCurrencyExponent(),
 
                 "status",
                 row.getWithdrawalStatus().name(),

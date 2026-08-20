@@ -52,6 +52,9 @@ public class DataCleanupService {
                                     )
                             )
                             .execute();
+
+            log.debug("DataBase cleanup progress payments. deletedInBatch={}, totalDeleted={}, threshold={}",
+                    deleted, total, threshold);
             total += deleted;
             if (deleted < cleanupProperties.getBatchSize()) {
                 break;
@@ -81,6 +84,8 @@ public class DataCleanupService {
                                     )
                             )
                             .execute();
+            log.debug("DataBase cleanup progress withdrawals. deletedInBatch={}, totalDeleted={}, threshold={}",
+                    deleted, total, threshold);
             total += deleted;
             if (deleted < cleanupProperties.getBatchSize()) {
                 break;

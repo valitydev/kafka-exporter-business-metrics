@@ -93,6 +93,9 @@ service:
       wallets:
         poolSize: 300
         ttlSec: 300
+      currencies:
+        poolSize: 300
+        ttlSec: 300
 
 exporter:
   cleanup:

@@ -20,6 +20,7 @@ public class PaymentStatusMetricRow {
     private String shopName;
 
     private String currencyCode;
+    private String currencyExponent;
 
     private InvoicePaymentStatus paymentStatus;
 

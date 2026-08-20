@@ -84,6 +84,7 @@ public class PaymentMetricGaugeSpringTest {
         row.setShopId("shop");
         row.setShopName("shop name");
         row.setCurrencyCode("RUB");
+        row.setCurrencyExponent("2");
         row.setPartyId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
         row.setPartyName("party name");
         row.setCount(42L);
@@ -104,6 +105,7 @@ public class PaymentMetricGaugeSpringTest {
         row.setPartyId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
         row.setPartyName("party name");
         row.setCurrencyCode("RUB");
+        row.setCurrencyExponent("2");
         row.setPaymentStatus(InvoicePaymentStatus.captured);
         TimeWindowMetrics metrics = new TimeWindowMetrics();
 

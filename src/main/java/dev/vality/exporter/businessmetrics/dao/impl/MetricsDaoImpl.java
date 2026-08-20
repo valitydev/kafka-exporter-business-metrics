@@ -4,6 +4,7 @@ import dev.vality.exporter.businessmetrics.dao.MetricsDao;
 import dev.vality.exporter.businessmetrics.dto.PaymentStatusMetricRow;
 import dev.vality.exporter.businessmetrics.dto.PaymentTransactionMetricRow;
 import dev.vality.exporter.businessmetrics.dto.WithdrawalStatusMetricRow;
+import dev.vality.exporter.businessmetrics.dto.WithdrawalTransactionMetricRow;
 import dev.vality.exporter.businessmetrics.model.MetricWindow;
 import dev.vality.exporter.businessmetrics.model.TimeWindowMetrics;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,6 @@ import java.util.List;
 
 import static dev.vality.exporter.businessmetrics.domain.Tables.INVOICE_PAYMENT_DATA;
 import static dev.vality.exporter.businessmetrics.domain.Tables.WITHDRAWAL_DATA;
-import static org.jooq.impl.DSL.count;
 
 @Component
 @RequiredArgsConstructor
@@ -59,17 +59,17 @@ public class MetricsDaoImpl implements MetricsDao {
     }
 
     @Override
-    public List<PaymentTransactionMetricRow> getPaymentTransactionMetrics(LocalDateTime from) {
+    public List<PaymentTransactionMetricRow> getPaymentTransactionMetrics() {
         return dsl.select(
                         INVOICE_PAYMENT_DATA.PROVIDER_ID,
                         INVOICE_PAYMENT_DATA.TERMINAL_ID,
                         INVOICE_PAYMENT_DATA.PARTY_ID,
                         INVOICE_PAYMENT_DATA.SHOP_ID,
                         INVOICE_PAYMENT_DATA.CURRENCY_CODE,
-                        count().as("count"))
+                        DSL.count().as("count"))
                 .from(INVOICE_PAYMENT_DATA)
-                .where(INVOICE_PAYMENT_DATA.CREATED_AT.gt(from))
-                .groupBy(INVOICE_PAYMENT_DATA.PROVIDER_ID,
+                .groupBy(
+                        INVOICE_PAYMENT_DATA.PROVIDER_ID,
                         INVOICE_PAYMENT_DATA.TERMINAL_ID,
                         INVOICE_PAYMENT_DATA.PARTY_ID,
                         INVOICE_PAYMENT_DATA.SHOP_ID,
@@ -101,6 +101,25 @@ public class MetricsDaoImpl implements MetricsDao {
                         WITHDRAWAL_DATA.CURRENCY_CODE,
                         WITHDRAWAL_DATA.WITHDRAWAL_STATUS)
                 .fetch().map(this::mapWithdrawalStatusMetricRow);
+    }
+
+    @Override
+    public List<WithdrawalTransactionMetricRow> getWithdrawalTransactionMetrics() {
+        return dsl.select(
+                        WITHDRAWAL_DATA.PROVIDER_ID,
+                        WITHDRAWAL_DATA.TERMINAL_ID,
+                        WITHDRAWAL_DATA.PARTY_ID,
+                        WITHDRAWAL_DATA.WALLET_ID,
+                        WITHDRAWAL_DATA.CURRENCY_CODE,
+                        DSL.count().as("count"))
+                .from(WITHDRAWAL_DATA)
+                .groupBy(
+                        WITHDRAWAL_DATA.PROVIDER_ID,
+                        WITHDRAWAL_DATA.TERMINAL_ID,
+                        WITHDRAWAL_DATA.PARTY_ID,
+                        WITHDRAWAL_DATA.WALLET_ID,
+                        WITHDRAWAL_DATA.CURRENCY_CODE)
+                .fetchInto(WithdrawalTransactionMetricRow.class);
     }
 
     private SelectFieldOrAsterisk[] createMetricFields(Field<LocalDateTime> createdAt,

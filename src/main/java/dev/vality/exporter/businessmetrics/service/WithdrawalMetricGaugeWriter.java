@@ -1,6 +1,7 @@
 package dev.vality.exporter.businessmetrics.service;
 
 import dev.vality.exporter.businessmetrics.dto.WithdrawalStatusMetricRow;
+import dev.vality.exporter.businessmetrics.dto.WithdrawalTransactionMetricRow;
 import dev.vality.exporter.businessmetrics.factory.MetricGaugeFactory;
 import dev.vality.exporter.businessmetrics.factory.MetricTagsFactory;
 import dev.vality.exporter.businessmetrics.model.Metric;
@@ -20,14 +21,16 @@ public class WithdrawalMetricGaugeWriter {
 
     private MultiGauge countGauge;
     private MultiGauge amountGauge;
+    private MultiGauge transactionGauge;
 
     @PostConstruct
     void init() {
         countGauge = factory.create(Metric.WITHDRAWALS_STATUS_COUNT);
         amountGauge = factory.create(Metric.WITHDRAWALS_AMOUNT);
+        transactionGauge = factory.create(Metric.WITHDRAWALS_TRANSACTION_COUNT);
     }
 
-    public void write(
+    public void writeStatus(
             List<WithdrawalStatusMetricRow> rows
     ) {
         countGauge.register(
@@ -40,6 +43,21 @@ public class WithdrawalMetricGaugeWriter {
         amountGauge.register(
                 rows.stream()
                         .flatMap(row -> toAmountRows(row).stream())
+                        .toList(),
+                true
+        );
+    }
+
+
+    public void writeTransactions(
+            List<WithdrawalTransactionMetricRow> rows
+    ) {
+        transactionGauge.register(
+                rows.stream()
+                        .map(row -> MultiGauge.Row.of(
+                                tags.transactionWithdrawalTags(row),
+                                row.getCount()
+                        ))
                         .toList(),
                 true
         );
