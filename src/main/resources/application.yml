@@ -34,32 +34,74 @@ spring:
   output:
     ansi:
       enabled: always
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: org.postgresql.Driver
+    url: "${db.url}"
+    username: '${db.user}'
+    password: "${db.password}"
+    hikari:
+      idle-timeout: 30000
+      maximum-pool-size: 2
+      data-source-properties:
+        reWriteBatchedInserts: true
+  flyway:
+    schemas: kebm
+    postgresql:
+      transactional-lock: false
   kafka:
     bootstrap-servers: localhost:9092
     client-id: kafka-exporter-business-metrics-client
-    topics:
-      invoice: invoicing-events
-      withdrawal: withdrawal-events
-    streams:
-      application-id: kafka-exporter-business-metrics
+    consumer:
+      enable-auto-commit: false
+      auto-offset-reset: earliest
+      max-poll-records: 20
       properties:
-        auto.offset.reset: latest
-        retries: 300
-        retry.backoff.ms: 1000
-        num.stream.threads: 7
-        default.api.timeout.ms: 300000
-        clean.timeout.sec: 20
-        fixed.rate.timeout.ms: 60000
+        max.poll.interval.ms: 30000
+        session.timeout.ms: 30000
 
-metrics:
-  ttl:
-    seconds: 3600
-    min-lifetime-seconds: 120
-    cleaner:
+kafka:
+  consumer:
+    group-id: "KafkaExporterListener"
+    invoicing-concurrency: 7
+    withdrawal-concurrency: 7
+  topics:
+    invoice:
+      id: invoice-test
       enabled: false
-      ms: 60000
-  topology:
-    payment:
-      enabled: true
     withdrawal:
-      enabled: true
+      id: withdrawal-test
+      enabled: false
+
+service:
+  dominant:
+    url: http://localhost:8022/change_it
+    networkTimeout: 5000
+    cache:
+      terminals:
+        poolSize: 300
+        ttlSec: 300
+      providers:
+        poolSize: 300
+        ttlSec: 300
+      shops:
+        poolSize: 300
+        ttlSec: 300
+      parties:
+        poolSize: 300
+        ttlSec: 300
+      wallets:
+        poolSize: 300
+        ttlSec: 300
+      currencies:
+        poolSize: 300
+        ttlSec: 300
+
+exporter:
+  cleanup:
+    cron: "0 0 3 * * *"
+    retention-days: 5
+    batch-size: 10000
+  metrics:
+    refresh-delay-ms: 15000
+    transaction-lookback-sec: 15
