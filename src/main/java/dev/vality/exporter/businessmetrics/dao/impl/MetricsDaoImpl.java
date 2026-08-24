@@ -40,8 +40,8 @@ public class MetricsDaoImpl implements MetricsDao {
                 INVOICE_PAYMENT_DATA.AMOUNT,
                 now);
         return dsl.select(
-                        INVOICE_PAYMENT_DATA.PROVIDER_ID,
-                        INVOICE_PAYMENT_DATA.TERMINAL_ID,
+                        DSL.coalesce(INVOICE_PAYMENT_DATA.PROVIDER_ID, -1).as(INVOICE_PAYMENT_DATA.PROVIDER_ID),
+                        DSL.coalesce(INVOICE_PAYMENT_DATA.TERMINAL_ID, -1).as(INVOICE_PAYMENT_DATA.TERMINAL_ID),
                         INVOICE_PAYMENT_DATA.PARTY_ID,
                         INVOICE_PAYMENT_DATA.SHOP_ID,
                         INVOICE_PAYMENT_DATA.CURRENCY_CODE,
@@ -61,8 +61,8 @@ public class MetricsDaoImpl implements MetricsDao {
     @Override
     public List<PaymentTransactionMetricRow> getPaymentTransactionMetrics() {
         return dsl.select(
-                        INVOICE_PAYMENT_DATA.PROVIDER_ID,
-                        INVOICE_PAYMENT_DATA.TERMINAL_ID,
+                        DSL.coalesce(INVOICE_PAYMENT_DATA.PROVIDER_ID, -1).as(INVOICE_PAYMENT_DATA.PROVIDER_ID),
+                        DSL.coalesce(INVOICE_PAYMENT_DATA.TERMINAL_ID, -1).as(INVOICE_PAYMENT_DATA.TERMINAL_ID),
                         INVOICE_PAYMENT_DATA.PARTY_ID,
                         INVOICE_PAYMENT_DATA.SHOP_ID,
                         INVOICE_PAYMENT_DATA.CURRENCY_CODE,
@@ -85,8 +85,8 @@ public class MetricsDaoImpl implements MetricsDao {
                 WITHDRAWAL_DATA.AMOUNT,
                 now);
         return dsl.select(
-                        WITHDRAWAL_DATA.PROVIDER_ID,
-                        WITHDRAWAL_DATA.TERMINAL_ID,
+                        DSL.coalesce(WITHDRAWAL_DATA.PROVIDER_ID, -1).as(WITHDRAWAL_DATA.PROVIDER_ID),
+                        DSL.coalesce(WITHDRAWAL_DATA.TERMINAL_ID, -1).as(WITHDRAWAL_DATA.TERMINAL_ID),
                         WITHDRAWAL_DATA.PARTY_ID,
                         WITHDRAWAL_DATA.WALLET_ID,
                         WITHDRAWAL_DATA.CURRENCY_CODE,
@@ -106,8 +106,8 @@ public class MetricsDaoImpl implements MetricsDao {
     @Override
     public List<WithdrawalTransactionMetricRow> getWithdrawalTransactionMetrics() {
         return dsl.select(
-                        WITHDRAWAL_DATA.PROVIDER_ID,
-                        WITHDRAWAL_DATA.TERMINAL_ID,
+                        DSL.coalesce(WITHDRAWAL_DATA.PROVIDER_ID, -1).as(WITHDRAWAL_DATA.PROVIDER_ID),
+                        DSL.coalesce(WITHDRAWAL_DATA.TERMINAL_ID, -1).as(WITHDRAWAL_DATA.TERMINAL_ID),
                         WITHDRAWAL_DATA.PARTY_ID,
                         WITHDRAWAL_DATA.WALLET_ID,
                         WITHDRAWAL_DATA.CURRENCY_CODE,
