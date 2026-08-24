@@ -89,7 +89,7 @@ public class WithdrawalMetricGaugeSpringTest {
         row.setPartyName("party name");
         row.setCount(42L);
         writer.writeTransactions(List.of(row));
-        var metric = meterRegistry.find(Metric.PAYMENTS_TRANSACTION_COUNT.getName());
+        var metric = meterRegistry.find(Metric.WITHDRAWALS_TRANSACTION_COUNT.getName());
         assertThat(metric).isNotNull();
         assertThat(metric.gauges().size()).isEqualTo(1);
     }
