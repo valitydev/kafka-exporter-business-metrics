@@ -19,10 +19,9 @@ public enum Metric {
             formatWithPrefix("withdrawals_status_count_total"),
             "Withdrawals statuses count"),
 
-
     WITHDRAWALS_TRANSACTION_COUNT(
-            formatWithPrefix("payments_transaction_count_total"),
-            "Payments new transactions since last scrape"),
+            formatWithPrefix("withdrawals_transaction_count_total"),
+            "Withdrawals new transactions since last scrape"),
 
     PAYMENTS_AMOUNT(
             formatWithPrefix("payments_amount_minor_total"),
