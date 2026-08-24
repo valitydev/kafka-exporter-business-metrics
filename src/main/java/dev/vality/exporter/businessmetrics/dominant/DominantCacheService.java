@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -25,11 +26,20 @@ public class DominantCacheService {
 
     private final AsyncLoadingCache<String, String> currencyCache;
 
+    private static final int UNKNOWN_ID = -1;
+    private static final String UNKNOWN_VALUE = "unknown";
+
     public CompletableFuture<String> getProviderName(ProviderRef ref) {
+        if (Objects.equals(ref.getId(),UNKNOWN_ID)) {
+            return CompletableFuture.completedFuture(UNKNOWN_VALUE);
+        }
         return get(providersCache, ref.getId(), "provider");
     }
 
     public CompletableFuture<String> getTerminalName(TerminalRef ref) {
+        if (Objects.equals(ref.getId(),UNKNOWN_ID)) {
+            return CompletableFuture.completedFuture(UNKNOWN_VALUE);
+        }
         return get(terminalsCache, ref.getId(), "terminal");
     }
 
@@ -57,7 +67,7 @@ public class DominantCacheService {
         return cache.get(key)
                 .exceptionally(e -> {
                     log.warn("Cannot resolve {} {}", entity, key, e);
-                    return "unknown";
+                    return UNKNOWN_VALUE;
                 });
     }
 }
