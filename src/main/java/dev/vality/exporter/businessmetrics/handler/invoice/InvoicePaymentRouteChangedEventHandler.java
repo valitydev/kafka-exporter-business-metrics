@@ -4,8 +4,8 @@ import dev.vality.damsel.payment_processing.InvoicePaymentChange;
 import dev.vality.dao.DaoException;
 import dev.vality.exporter.businessmetrics.dao.InvoicePaymentDao;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.InvoicePaymentData;
-import dev.vality.exporter.businessmetrics.exception.NotFoundException;
 import dev.vality.exporter.businessmetrics.exception.StorageException;
+import dev.vality.exporter.businessmetrics.service.InvoicePaymentClient;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class InvoicePaymentRouteChangedEventHandler implements InvoiceEventHandler {
 
     private final InvoicePaymentDao invoicePaymentDao;
+    private final InvoicePaymentClient invoicePaymentClient;
 
     @Override
     public boolean accept(InvoicePaymentChange change) {
@@ -30,7 +31,8 @@ public class InvoicePaymentRouteChangedEventHandler implements InvoiceEventHandl
                     event.getSourceId());
             var payload = change.getPayload();
             var invoicePaymentStarted = payload.getInvoicePaymentRouteChanged();
-            InvoicePaymentData invoicePaymentData = getInvoicePaymentData(event.getSourceId(), change.getId());
+            InvoicePaymentData invoicePaymentData =
+                    invoicePaymentClient.getInvoicePaymentData(event.getSourceId(), change.getId(), event.getEventId());
             invoicePaymentData.setInvoiceId(event.getSourceId());
             invoicePaymentData.setPaymentId(change.getId());
             invoicePaymentData.setProviderId(invoicePaymentStarted.getRoute().getProvider().getId());
@@ -41,15 +43,5 @@ public class InvoicePaymentRouteChangedEventHandler implements InvoiceEventHandl
         } catch (DaoException ex) {
             throw new StorageException(ex);
         }
-    }
-
-    private InvoicePaymentData getInvoicePaymentData(String invoiceId, String paymentId) throws DaoException {
-        InvoicePaymentData invoicePaymentData = invoicePaymentDao.get(invoiceId, paymentId);
-
-        if (invoicePaymentData == null) {
-            throw new NotFoundException(
-                    String.format("InvoicePayment with invoiceId='%s' not found", invoiceId));
-        }
-        return invoicePaymentData;
     }
 }
