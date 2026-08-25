@@ -30,14 +30,14 @@ public class DominantCacheService {
     private static final String UNKNOWN_VALUE = "unknown";
 
     public CompletableFuture<String> getProviderName(ProviderRef ref) {
-        if (Objects.equals(ref.getId(),UNKNOWN_ID)) {
+        if (Objects.equals(ref.getId(), UNKNOWN_ID)) {
             return CompletableFuture.completedFuture(UNKNOWN_VALUE);
         }
         return get(providersCache, ref.getId(), "provider");
     }
 
     public CompletableFuture<String> getTerminalName(TerminalRef ref) {
-        if (Objects.equals(ref.getId(),UNKNOWN_ID)) {
+        if (Objects.equals(ref.getId(), UNKNOWN_ID)) {
             return CompletableFuture.completedFuture(UNKNOWN_VALUE);
         }
         return get(terminalsCache, ref.getId(), "terminal");

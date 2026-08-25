@@ -4,8 +4,8 @@ import dev.vality.dao.DaoException;
 import dev.vality.exporter.businessmetrics.dao.WithdrawalDao;
 import dev.vality.exporter.businessmetrics.domain.enums.WithdrawalStatus;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.WithdrawalData;
-import dev.vality.exporter.businessmetrics.exception.NotFoundException;
 import dev.vality.exporter.businessmetrics.exception.StorageException;
+import dev.vality.exporter.businessmetrics.service.WithdrawalClient;
 import dev.vality.fistful.withdrawal.TimestampedChange;
 import dev.vality.fistful.withdrawal.status.Status;
 import dev.vality.geck.common.util.TBaseUtil;
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 public class WithdrawalStatusChangedEventHandler implements WithdrawalEventHandler {
 
     private final WithdrawalDao withdrawalDao;
+    private final WithdrawalClient withdrawalClient;
 
     @Override
     public boolean accept(TimestampedChange change) {
@@ -33,7 +34,7 @@ public class WithdrawalStatusChangedEventHandler implements WithdrawalEventHandl
             log.info("Trying to handle WithdrawalStatusChanged: eventId={}, withdrawalId={}", event.getEventId(),
                     event.getSourceId());
 
-            WithdrawalData withdrawalData = getWithdrawalData(event);
+            WithdrawalData withdrawalData = withdrawalClient.getWithdrawalData(event);
             Status status = change.getChange().getStatusChanged().getStatus();
             withdrawalData.setWithdrawalStatus(TBaseUtil.unionFieldToEnum(status, WithdrawalStatus.class));
 
@@ -44,16 +45,5 @@ public class WithdrawalStatusChangedEventHandler implements WithdrawalEventHandl
         } catch (DaoException ex) {
             throw new StorageException(ex);
         }
-    }
-
-    private WithdrawalData getWithdrawalData(MachineEvent event) throws DaoException {
-        WithdrawalData withdrawalData = withdrawalDao.get(event.getSourceId());
-
-        if (withdrawalData == null) {
-            throw new NotFoundException(
-                    String.format("WithdrawalEvent with withdrawalId='%s' not found", event.getSourceId()));
-        }
-
-        return withdrawalData;
     }
 }

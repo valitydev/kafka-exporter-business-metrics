@@ -37,13 +37,14 @@ public class InvoicePaymentDaoImpl extends AbstractGenericDao implements Invoice
 
     @Override
     public Long save(InvoicePaymentData invoicePaymentData) throws DaoException {
-        InvoicePaymentDataRecord withdrawalRecord = getDslContext().newRecord(INVOICE_PAYMENT_DATA, invoicePaymentData);
+        InvoicePaymentDataRecord invoicePaymentRecord =
+                getDslContext().newRecord(INVOICE_PAYMENT_DATA, invoicePaymentData);
 
         Query query = getDslContext().insertInto(INVOICE_PAYMENT_DATA)
-                .set(withdrawalRecord)
+                .set(invoicePaymentRecord)
                 .onConflict(INVOICE_PAYMENT_DATA.INVOICE_ID, INVOICE_PAYMENT_DATA.PAYMENT_ID)
                 .doUpdate()
-                .set(withdrawalRecord)
+                .set(invoicePaymentRecord)
                 .returning(INVOICE_PAYMENT_DATA.ID);
 
         KeyHolder keyHolder = new GeneratedKeyHolder();

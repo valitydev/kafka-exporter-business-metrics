@@ -96,6 +96,12 @@ service:
       currencies:
         poolSize: 300
         ttlSec: 300
+  invoicing:
+    url: http://localhost:8022/change_it
+    networkTimeout: 5000
+  withdrawal:
+    url: http://localhost:8022/change_it
+    networkTimeout: 5000
 
 exporter:
   cleanup:
