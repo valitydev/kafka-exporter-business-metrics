@@ -3,7 +3,6 @@ package dev.vality.exporter.businessmetrics.handler.withdrawal;
 import dev.vality.dao.DaoException;
 import dev.vality.exporter.businessmetrics.dao.WithdrawalDao;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.WithdrawalData;
-import dev.vality.exporter.businessmetrics.exception.NotFoundException;
 import dev.vality.exporter.businessmetrics.exception.StorageException;
 import dev.vality.fistful.withdrawal.Route;
 import dev.vality.fistful.withdrawal.TimestampedChange;
@@ -50,7 +49,7 @@ public class WithdrawalRouteChangedEventHandler implements WithdrawalEventHandle
         WithdrawalData withdrawalData = withdrawalDao.get(event.getSourceId());
 
         if (withdrawalData == null) {
-          log.warn("WithdrawalEvent with withdrawalId={} not found, skipped", event.getSourceId());
+            log.warn("WithdrawalEvent with withdrawalId={} not found, skipped", event.getSourceId());
         }
 
         return withdrawalData;

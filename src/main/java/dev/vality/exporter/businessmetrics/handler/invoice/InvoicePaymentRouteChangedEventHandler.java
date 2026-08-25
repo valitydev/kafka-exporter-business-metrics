@@ -4,7 +4,6 @@ import dev.vality.damsel.payment_processing.InvoicePaymentChange;
 import dev.vality.dao.DaoException;
 import dev.vality.exporter.businessmetrics.dao.InvoicePaymentDao;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.InvoicePaymentData;
-import dev.vality.exporter.businessmetrics.exception.NotFoundException;
 import dev.vality.exporter.businessmetrics.exception.StorageException;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +46,7 @@ public class InvoicePaymentRouteChangedEventHandler implements InvoiceEventHandl
         InvoicePaymentData invoicePaymentData = invoicePaymentDao.get(invoiceId, paymentId);
 
         if (invoicePaymentData == null) {
-           log.warn("InvoicePayment with invoiceId={} not found, skipped", invoiceId);
+            log.warn("InvoicePayment with invoiceId={} not found, skipped", invoiceId);
         }
         return invoicePaymentData;
     }

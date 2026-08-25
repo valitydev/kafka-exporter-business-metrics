@@ -5,7 +5,6 @@ import dev.vality.dao.DaoException;
 import dev.vality.exporter.businessmetrics.dao.InvoicePaymentDao;
 import dev.vality.exporter.businessmetrics.domain.enums.InvoicePaymentStatus;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.InvoicePaymentData;
-import dev.vality.exporter.businessmetrics.exception.NotFoundException;
 import dev.vality.exporter.businessmetrics.exception.StorageException;
 import dev.vality.geck.common.util.TBaseUtil;
 import dev.vality.machinegun.eventsink.MachineEvent;

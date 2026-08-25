@@ -4,7 +4,6 @@ import dev.vality.dao.DaoException;
 import dev.vality.exporter.businessmetrics.dao.WithdrawalDao;
 import dev.vality.exporter.businessmetrics.domain.enums.WithdrawalStatus;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.WithdrawalData;
-import dev.vality.exporter.businessmetrics.exception.NotFoundException;
 import dev.vality.exporter.businessmetrics.exception.StorageException;
 import dev.vality.fistful.withdrawal.TimestampedChange;
 import dev.vality.fistful.withdrawal.status.Status;

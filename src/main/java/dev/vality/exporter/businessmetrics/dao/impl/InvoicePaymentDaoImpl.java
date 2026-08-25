@@ -37,7 +37,8 @@ public class InvoicePaymentDaoImpl extends AbstractGenericDao implements Invoice
 
     @Override
     public Long save(InvoicePaymentData invoicePaymentData) throws DaoException {
-        InvoicePaymentDataRecord invoicePaymentRecord = getDslContext().newRecord(INVOICE_PAYMENT_DATA, invoicePaymentData);
+        InvoicePaymentDataRecord invoicePaymentRecord =
+                getDslContext().newRecord(INVOICE_PAYMENT_DATA, invoicePaymentData);
 
         Query query = getDslContext().insertInto(INVOICE_PAYMENT_DATA)
                 .set(invoicePaymentRecord)
