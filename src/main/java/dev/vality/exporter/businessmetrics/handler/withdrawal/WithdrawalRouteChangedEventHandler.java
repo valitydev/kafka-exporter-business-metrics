@@ -3,8 +3,8 @@ package dev.vality.exporter.businessmetrics.handler.withdrawal;
 import dev.vality.dao.DaoException;
 import dev.vality.exporter.businessmetrics.dao.WithdrawalDao;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.WithdrawalData;
+import dev.vality.exporter.businessmetrics.exception.NotFoundException;
 import dev.vality.exporter.businessmetrics.exception.StorageException;
-import dev.vality.exporter.businessmetrics.service.WithdrawalClient;
 import dev.vality.fistful.withdrawal.Route;
 import dev.vality.fistful.withdrawal.TimestampedChange;
 import dev.vality.machinegun.eventsink.MachineEvent;
@@ -20,7 +20,6 @@ import java.util.Objects;
 public class WithdrawalRouteChangedEventHandler implements WithdrawalEventHandler {
 
     private final WithdrawalDao withdrawalDao;
-    private final WithdrawalClient withdrawalClient;
 
     @Override
     public boolean accept(TimestampedChange change) {
@@ -33,7 +32,7 @@ public class WithdrawalRouteChangedEventHandler implements WithdrawalEventHandle
         try {
             log.info("Trying to handle WithdrawalRouteChanged: eventId={}, withdrawalId={}", event.getEventId(),
                     event.getSourceId());
-            WithdrawalData withdrawalData = withdrawalClient.getWithdrawalData(event);
+            WithdrawalData withdrawalData = getWithdrawalData(event);
             Route route = change.getChange().getRoute().getRoute();
             if (Objects.nonNull(route)) {
                 withdrawalData.setProviderId(route.getProviderId());
@@ -47,4 +46,14 @@ public class WithdrawalRouteChangedEventHandler implements WithdrawalEventHandle
         }
     }
 
+    private WithdrawalData getWithdrawalData(MachineEvent event) throws DaoException {
+        WithdrawalData withdrawalData = withdrawalDao.get(event.getSourceId());
+
+        if (withdrawalData == null) {
+            throw new NotFoundException(
+                    String.format("WithdrawalEvent with withdrawalId='%s' not found", event.getSourceId()));
+        }
+
+        return withdrawalData;
+    }
 }

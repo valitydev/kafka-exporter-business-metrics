@@ -3,7 +3,6 @@ package dev.vality.exporter.businessmetrics.handler;
 import dev.vality.damsel.payment_processing.EventPayload;
 import dev.vality.damsel.payment_processing.InvoiceChange;
 import dev.vality.damsel.payment_processing.InvoicePaymentChange;
-import dev.vality.damsel.payment_processing.InvoicingSrv;
 import dev.vality.dao.DaoException;
 import dev.vality.exporter.businessmetrics.config.PostgresqlSpringBootITest;
 import dev.vality.exporter.businessmetrics.dao.InvoicePaymentDao;
@@ -34,9 +33,6 @@ class InvoicePaymentEventHandlerTest {
 
     @MockitoBean
     private InvoicePaymentDao invoicePaymentDao;
-
-    @MockitoBean
-    private InvoicingSrv.Iface invoicingClient;
 
     @Autowired
     private InvoicePaymentStartedEventHandler invoicePaymentStartedEventHandler;
@@ -132,9 +128,6 @@ class InvoicePaymentEventHandlerTest {
         when(invoicePaymentDao.get(invoiceId, "1"))
                 .thenReturn(null);
 
-        when(invoicingClient.get(any(), any()))
-                .thenReturn(null);
-
         MachineEvent event =
                 TestData.getRouteChangedInvoicePaymentEvents(invoiceId);
 
@@ -196,9 +189,6 @@ class InvoicePaymentEventHandlerTest {
         String invoiceId = "invoice-1";
 
         when(invoicePaymentDao.get(invoiceId, "1"))
-                .thenReturn(null);
-
-        when(invoicingClient.get(any(), any()))
                 .thenReturn(null);
 
         MachineEvent event =
