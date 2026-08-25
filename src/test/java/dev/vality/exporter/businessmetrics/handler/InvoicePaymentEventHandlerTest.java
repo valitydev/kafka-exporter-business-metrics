@@ -8,7 +8,6 @@ import dev.vality.exporter.businessmetrics.config.PostgresqlSpringBootITest;
 import dev.vality.exporter.businessmetrics.dao.InvoicePaymentDao;
 import dev.vality.exporter.businessmetrics.domain.enums.InvoicePaymentStatus;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.InvoicePaymentData;
-import dev.vality.exporter.businessmetrics.exception.NotFoundException;
 import dev.vality.exporter.businessmetrics.exception.StorageException;
 import dev.vality.exporter.businessmetrics.handler.invoice.InvoicePaymentRouteChangedEventHandler;
 import dev.vality.exporter.businessmetrics.handler.invoice.InvoicePaymentStartedEventHandler;
@@ -23,8 +22,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDateTime;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -133,8 +131,9 @@ class InvoicePaymentEventHandlerTest {
 
         InvoicePaymentChange change = extractPaymentChange(event);
 
-        assertThatThrownBy(() -> invoicePaymentRouteChangedEventHandler.handle(change, event))
-                .isInstanceOf(NotFoundException.class);
+        assertThatCode(() ->
+                invoicePaymentRouteChangedEventHandler.handle(change, event)
+        ).doesNotThrowAnyException();
 
         verify(invoicePaymentDao, never()).save(any());
     }
@@ -196,10 +195,9 @@ class InvoicePaymentEventHandlerTest {
 
         InvoicePaymentChange change = extractPaymentChange(event);
 
-        assertThatThrownBy(() ->
+        assertThatCode(() ->
                 invoicePaymentStatusChangedEventHandler.handle(change, event)
-        )
-                .isInstanceOf(NotFoundException.class);
+        ).doesNotThrowAnyException();
 
         verify(invoicePaymentDao)
                 .get(invoiceId, "1");

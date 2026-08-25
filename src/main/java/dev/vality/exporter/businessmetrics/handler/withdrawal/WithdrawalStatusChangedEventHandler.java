@@ -31,8 +31,11 @@ public class WithdrawalStatusChangedEventHandler implements WithdrawalEventHandl
         try {
             log.info("Trying to handle WithdrawalStatusChanged: eventId={}, withdrawalId={}", event.getEventId(),
                     event.getSourceId());
-
-            WithdrawalData withdrawalData = getWithdrawalData(event);
+            WithdrawalData withdrawalData = withdrawalDao.get(event.getSourceId());
+            if (withdrawalData == null) {
+                log.warn("WithdrawalEvent with withdrawalId={} not found, skipped", event.getSourceId());
+                return;
+            }
             Status status = change.getChange().getStatusChanged().getStatus();
             withdrawalData.setWithdrawalStatus(TBaseUtil.unionFieldToEnum(status, WithdrawalStatus.class));
 
@@ -43,15 +46,5 @@ public class WithdrawalStatusChangedEventHandler implements WithdrawalEventHandl
         } catch (DaoException ex) {
             throw new StorageException(ex);
         }
-    }
-
-    private WithdrawalData getWithdrawalData(MachineEvent event) throws DaoException {
-        WithdrawalData withdrawalData = withdrawalDao.get(event.getSourceId());
-
-        if (withdrawalData == null) {
-            log.warn("WithdrawalEvent with withdrawalId={} not found, skipped", event.getSourceId());
-        }
-
-        return withdrawalData;
     }
 }

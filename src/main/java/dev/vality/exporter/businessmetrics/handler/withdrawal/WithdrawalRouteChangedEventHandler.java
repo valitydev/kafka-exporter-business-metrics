@@ -31,7 +31,11 @@ public class WithdrawalRouteChangedEventHandler implements WithdrawalEventHandle
         try {
             log.info("Trying to handle WithdrawalRouteChanged: eventId={}, withdrawalId={}", event.getEventId(),
                     event.getSourceId());
-            WithdrawalData withdrawalData = getWithdrawalData(event);
+            WithdrawalData withdrawalData = withdrawalDao.get(event.getSourceId());
+            if (withdrawalData == null) {
+                log.warn("WithdrawalEvent with withdrawalId={} not found, skipped", event.getSourceId());
+                return;
+            }
             Route route = change.getChange().getRoute().getRoute();
             if (Objects.nonNull(route)) {
                 withdrawalData.setProviderId(route.getProviderId());
@@ -43,15 +47,5 @@ public class WithdrawalRouteChangedEventHandler implements WithdrawalEventHandle
         } catch (DaoException ex) {
             throw new StorageException(ex);
         }
-    }
-
-    private WithdrawalData getWithdrawalData(MachineEvent event) throws DaoException {
-        WithdrawalData withdrawalData = withdrawalDao.get(event.getSourceId());
-
-        if (withdrawalData == null) {
-            log.warn("WithdrawalEvent with withdrawalId={} not found, skipped", event.getSourceId());
-        }
-
-        return withdrawalData;
     }
 }
