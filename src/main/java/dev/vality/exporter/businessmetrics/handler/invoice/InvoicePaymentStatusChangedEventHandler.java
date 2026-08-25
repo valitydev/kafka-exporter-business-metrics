@@ -29,9 +29,13 @@ public class InvoicePaymentStatusChangedEventHandler implements InvoiceEventHand
         try {
             log.info("Trying to handle InvoicePaymentStatusChanged: eventId={}, invoiceId={}", event.getEventId(),
                     event.getSourceId());
+            InvoicePaymentData invoicePaymentData = invoicePaymentDao.get(event.getSourceId(), change.getId());
+            if (invoicePaymentData == null) {
+                log.warn("InvoicePayment with invoiceId={} not found, skipped", event.getSourceId());
+                return;
+            }
             var payload = change.getPayload();
             var invoicePaymentStatusChanged = payload.getInvoicePaymentStatusChanged();
-            InvoicePaymentData invoicePaymentData = getInvoicePaymentData(event.getSourceId(), change.getId());
             invoicePaymentData.setInvoiceId(event.getSourceId());
             invoicePaymentData.setPaymentId(change.getId());
             invoicePaymentData.setPaymentStatus(
@@ -43,15 +47,5 @@ public class InvoicePaymentStatusChangedEventHandler implements InvoiceEventHand
         } catch (DaoException ex) {
             throw new StorageException(ex);
         }
-    }
-
-    private InvoicePaymentData getInvoicePaymentData(String invoiceId, String paymentId) throws DaoException {
-        InvoicePaymentData invoicePaymentData = invoicePaymentDao.get(invoiceId, paymentId);
-
-        if (invoicePaymentData == null) {
-            log.warn("InvoicePayment with invoiceId={} not found, skipped", invoiceId);
-        }
-
-        return invoicePaymentData;
     }
 }

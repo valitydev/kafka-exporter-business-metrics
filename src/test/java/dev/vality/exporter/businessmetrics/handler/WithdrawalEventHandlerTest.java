@@ -5,7 +5,6 @@ import dev.vality.exporter.businessmetrics.config.PostgresqlSpringBootITest;
 import dev.vality.exporter.businessmetrics.dao.WithdrawalDao;
 import dev.vality.exporter.businessmetrics.domain.enums.WithdrawalStatus;
 import dev.vality.exporter.businessmetrics.domain.tables.pojos.WithdrawalData;
-import dev.vality.exporter.businessmetrics.exception.NotFoundException;
 import dev.vality.exporter.businessmetrics.exception.StorageException;
 import dev.vality.exporter.businessmetrics.handler.withdrawal.WithdrawalCreatedEventHandler;
 import dev.vality.exporter.businessmetrics.handler.withdrawal.WithdrawalRouteChangedEventHandler;
@@ -22,8 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -164,10 +162,9 @@ class WithdrawalEventHandlerTest {
 
         TimestampedChange change = extractWithdrawalChange(event);
 
-        assertThatThrownBy(() ->
+        assertThatCode(() ->
                 withdrawalRouteChangedEventHandler.handle(change, event)
-        )
-                .isInstanceOf(NotFoundException.class);
+        ).doesNotThrowAnyException();
 
         verify(withdrawalDao)
                 .get(withdrawalId);
@@ -260,10 +257,9 @@ class WithdrawalEventHandlerTest {
 
         TimestampedChange change = extractWithdrawalChange(event);
 
-        assertThatThrownBy(() ->
+        assertThatCode(() ->
                 withdrawalStatusChangedEventHandler.handle(change, event)
-        )
-                .isInstanceOf(NotFoundException.class);
+        ).doesNotThrowAnyException();
 
         verify(withdrawalDao)
                 .get(withdrawalId);
