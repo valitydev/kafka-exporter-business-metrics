@@ -12,7 +12,6 @@ import dev.vality.exporter.businessmetrics.handler.withdrawal.WithdrawalRouteCha
 import dev.vality.exporter.businessmetrics.handler.withdrawal.WithdrawalStatusChangedEventHandler;
 import dev.vality.exporter.businessmetrics.kafka.serde.WithdrawalChangeDeserializer;
 import dev.vality.exporter.businessmetrics.utils.TestData;
-import dev.vality.fistful.withdrawal.ManagementSrv;
 import dev.vality.fistful.withdrawal.TimestampedChange;
 import dev.vality.machinegun.eventsink.MachineEvent;
 import org.junit.jupiter.api.Test;
@@ -33,9 +32,6 @@ class WithdrawalEventHandlerTest {
 
     @MockitoBean
     private WithdrawalDao withdrawalDao;
-
-    @MockitoBean
-    private ManagementSrv.Iface managementClient;
 
     @Autowired
     private WithdrawalCreatedEventHandler withdrawalCreatedEventHandler;
@@ -163,9 +159,6 @@ class WithdrawalEventHandlerTest {
         when(withdrawalDao.get(withdrawalId))
                 .thenReturn(null);
 
-        when(managementClient.get(any(), any()))
-                .thenReturn(null);
-
         MachineEvent event =
                 TestData.getRouteChangedWithdrawalEvents(withdrawalId);
 
@@ -260,9 +253,6 @@ class WithdrawalEventHandlerTest {
         String withdrawalId = "withdrawal-1";
 
         when(withdrawalDao.get(withdrawalId))
-                .thenReturn(null);
-
-        when(managementClient.get(any(), any()))
                 .thenReturn(null);
 
         MachineEvent event =
