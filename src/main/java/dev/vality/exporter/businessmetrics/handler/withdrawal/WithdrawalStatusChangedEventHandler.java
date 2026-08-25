@@ -50,8 +50,7 @@ public class WithdrawalStatusChangedEventHandler implements WithdrawalEventHandl
         WithdrawalData withdrawalData = withdrawalDao.get(event.getSourceId());
 
         if (withdrawalData == null) {
-            throw new NotFoundException(
-                    String.format("WithdrawalEvent with withdrawalId='%s' not found", event.getSourceId()));
+            log.warn("WithdrawalEvent with withdrawalId={} not found, skipped", event.getSourceId());
         }
 
         return withdrawalData;

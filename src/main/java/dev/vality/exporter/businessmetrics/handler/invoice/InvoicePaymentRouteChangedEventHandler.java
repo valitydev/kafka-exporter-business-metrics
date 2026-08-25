@@ -47,8 +47,7 @@ public class InvoicePaymentRouteChangedEventHandler implements InvoiceEventHandl
         InvoicePaymentData invoicePaymentData = invoicePaymentDao.get(invoiceId, paymentId);
 
         if (invoicePaymentData == null) {
-            throw new NotFoundException(
-                    String.format("InvoicePayment with invoiceId='%s' not found", invoiceId));
+           log.warn("InvoicePayment with invoiceId={} not found, skipped", invoiceId);
         }
         return invoicePaymentData;
     }

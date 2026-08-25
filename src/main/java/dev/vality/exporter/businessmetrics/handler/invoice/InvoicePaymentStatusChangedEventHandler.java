@@ -39,7 +39,7 @@ public class InvoicePaymentStatusChangedEventHandler implements InvoiceEventHand
                     TBaseUtil.unionFieldToEnum(invoicePaymentStatusChanged.getStatus(),
                             InvoicePaymentStatus.class));
             Long id = invoicePaymentDao.save(invoicePaymentData);
-            log.info("InvoicePaymentStatusChanged has {} been saved: eventId={}, withdrawalId={}",
+            log.info("InvoicePaymentStatusChanged has {} been saved: eventId={}, invoiceId={}",
                     id == null ? "NOT" : "", event.getEventId(), event.getSourceId());
         } catch (DaoException ex) {
             throw new StorageException(ex);
@@ -50,8 +50,7 @@ public class InvoicePaymentStatusChangedEventHandler implements InvoiceEventHand
         InvoicePaymentData invoicePaymentData = invoicePaymentDao.get(invoiceId, paymentId);
 
         if (invoicePaymentData == null) {
-            throw new NotFoundException(
-                    String.format("InvoicePayment with invoiceId='%s' not found", invoiceId));
+            log.warn("InvoicePayment with invoiceId={} not found, skipped", invoiceId);
         }
 
         return invoicePaymentData;
