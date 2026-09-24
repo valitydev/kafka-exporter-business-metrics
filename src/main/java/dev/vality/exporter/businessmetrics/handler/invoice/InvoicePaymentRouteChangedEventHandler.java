@@ -25,7 +25,7 @@ public class InvoicePaymentRouteChangedEventHandler implements InvoiceEventHandl
     @Override
     public void handle(InvoicePaymentChange change, MachineEvent event) {
         try {
-            log.info("Trying to handle InvoicePaymentRouteChanged: eventId={}, invoiceId={}", event.getEventId(),
+            log.debug("Trying to handle InvoicePaymentRouteChanged: eventId={}, invoiceId={}", event.getEventId(),
                     event.getSourceId());
             InvoicePaymentData invoicePaymentData = invoicePaymentDao.get(event.getSourceId(), change.getId());
             if (invoicePaymentData == null) {
@@ -39,7 +39,7 @@ public class InvoicePaymentRouteChangedEventHandler implements InvoiceEventHandl
             invoicePaymentData.setProviderId(invoicePaymentStarted.getRoute().getProvider().getId());
             invoicePaymentData.setTerminalId(invoicePaymentStarted.getRoute().getTerminal().getId());
             Long id = invoicePaymentDao.save(invoicePaymentData);
-            log.info("InvoicePaymentRouteChanged has {} been saved: eventId={}, invoiceId={}",
+            log.debug("InvoicePaymentRouteChanged has {} been saved: eventId={}, invoiceId={}",
                     id == null ? "NOT" : "", event.getEventId(), event.getSourceId());
         } catch (DaoException ex) {
             throw new StorageException(ex);

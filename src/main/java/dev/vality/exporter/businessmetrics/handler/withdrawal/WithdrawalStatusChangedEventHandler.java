@@ -29,7 +29,7 @@ public class WithdrawalStatusChangedEventHandler implements WithdrawalEventHandl
     @Override
     public void handle(TimestampedChange change, MachineEvent event) {
         try {
-            log.info("Trying to handle WithdrawalStatusChanged: eventId={}, withdrawalId={}", event.getEventId(),
+            log.debug("Trying to handle WithdrawalStatusChanged: eventId={}, withdrawalId={}", event.getEventId(),
                     event.getSourceId());
             WithdrawalData withdrawalData = withdrawalDao.get(event.getSourceId());
             if (withdrawalData == null) {
@@ -41,7 +41,7 @@ public class WithdrawalStatusChangedEventHandler implements WithdrawalEventHandl
 
             Long id = withdrawalDao.save(withdrawalData);
 
-            log.info("WithdrawalStatusChanged has {} been saved: eventId={}, withdrawalId={}",
+            log.debug("WithdrawalStatusChanged has {} been saved: eventId={}, withdrawalId={}",
                     id == null ? "NOT" : "", event.getEventId(), event.getSourceId());
         } catch (DaoException ex) {
             throw new StorageException(ex);

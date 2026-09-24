@@ -35,7 +35,7 @@ public class WithdrawalCreatedEventHandler implements WithdrawalEventHandler {
     public void handle(TimestampedChange change, MachineEvent event) {
         try {
             Withdrawal withdrawal = change.getChange().getCreated().getWithdrawal();
-            log.info("Trying to handle WithdrawalCreated: eventId={}, withdrawalId={}", event.getEventId(),
+            log.debug("Trying to handle WithdrawalCreated: eventId={}, withdrawalId={}", event.getEventId(),
                     event.getSourceId());
             WithdrawalData withdrawalData = new WithdrawalData();
             withdrawalData.setWithdrawalId(event.getSourceId());
@@ -52,7 +52,7 @@ public class WithdrawalCreatedEventHandler implements WithdrawalEventHandler {
                 withdrawalData.setTerminalId(route.getTerminalId());
             }
             Long id = withdrawalDao.save(withdrawalData);
-            log.info("WithdrawalCreated has {} been saved: eventId={}, withdrawalId={}",
+            log.debug("WithdrawalCreated has {} been saved: eventId={}, withdrawalId={}",
                     id == null ? "NOT" : "", event.getEventId(), event.getSourceId());
         } catch (DaoException ex) {
             throw new StorageException(ex);

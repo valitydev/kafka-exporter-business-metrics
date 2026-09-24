@@ -30,9 +30,9 @@ public class InvoiceEventListener {
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
             @Header(KafkaHeaders.OFFSET) int offset,
             Acknowledgment ack) {
-        log.info("Listening Invoice: partition={}, offset={}, batch.size()={}", partition, offset, batch.size());
+        log.debug("Listening Invoice: partition={}, offset={}, batch.size()={}", partition, offset, batch.size());
         invoicePaymentEventService.handleEvents(batch.stream().map(SinkEvent::getEvent).collect(toList()));
         ack.acknowledge();
-        log.info("Ack Invoice: partition={}, offset={}", partition, offset);
+        log.debug("Ack Invoice: partition={}, offset={}", partition, offset);
     }
 }
