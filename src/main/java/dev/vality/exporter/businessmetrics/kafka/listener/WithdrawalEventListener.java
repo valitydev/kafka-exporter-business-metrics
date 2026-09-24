@@ -30,9 +30,9 @@ public class WithdrawalEventListener {
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
             @Header(KafkaHeaders.OFFSET) int offset,
             Acknowledgment ack) {
-        log.info("Listening Withdrawal: partition={}, offset={}, batch.size()={}", partition, offset, batch.size());
+        log.debug("Listening Withdrawal: partition={}, offset={}, batch.size()={}", partition, offset, batch.size());
         withdrawalEventService.handleEvents(batch.stream().map(SinkEvent::getEvent).collect(toList()));
         ack.acknowledge();
-        log.info("Ack Withdrawal: partition={}, offset={}", partition, offset);
+        log.debug("Ack Withdrawal: partition={}, offset={}", partition, offset);
     }
 }

@@ -27,7 +27,7 @@ public class InvoicePaymentStatusChangedEventHandler implements InvoiceEventHand
     @Override
     public void handle(InvoicePaymentChange change, MachineEvent event) {
         try {
-            log.info("Trying to handle InvoicePaymentStatusChanged: eventId={}, invoiceId={}", event.getEventId(),
+            log.debug("Trying to handle InvoicePaymentStatusChanged: eventId={}, invoiceId={}", event.getEventId(),
                     event.getSourceId());
             InvoicePaymentData invoicePaymentData = invoicePaymentDao.get(event.getSourceId(), change.getId());
             if (invoicePaymentData == null) {
@@ -42,7 +42,7 @@ public class InvoicePaymentStatusChangedEventHandler implements InvoiceEventHand
                     TBaseUtil.unionFieldToEnum(invoicePaymentStatusChanged.getStatus(),
                             InvoicePaymentStatus.class));
             Long id = invoicePaymentDao.save(invoicePaymentData);
-            log.info("InvoicePaymentStatusChanged has {} been saved: eventId={}, invoiceId={}",
+            log.debug("InvoicePaymentStatusChanged has {} been saved: eventId={}, invoiceId={}",
                     id == null ? "NOT" : "", event.getEventId(), event.getSourceId());
         } catch (DaoException ex) {
             throw new StorageException(ex);

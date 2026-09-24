@@ -31,7 +31,7 @@ public class InvoicePaymentStartedEventHandler implements InvoiceEventHandler {
     @Override
     public void handle(InvoicePaymentChange change, MachineEvent event) {
         try {
-            log.info("Trying to handle InvoicePaymentStartedCreated: eventId={}, invoiceId={}", event.getEventId(),
+            log.debug("Trying to handle InvoicePaymentStartedCreated: eventId={}, invoiceId={}", event.getEventId(),
                     event.getSourceId());
             var payload = change.getPayload();
             var invoicePaymentStarted = payload.getInvoicePaymentStarted();
@@ -52,7 +52,7 @@ public class InvoicePaymentStartedEventHandler implements InvoiceEventHandler {
             LocalDateTime createdAt = TypeUtil.stringToLocalDateTime(event.getCreatedAt());
             invoicePaymentData.setCreatedAt(createdAt);
             Long id = invoicePaymentDao.save(invoicePaymentData);
-            log.info("InvoicePaymentStartedCreated has {} been saved: eventId={}, invoiceId={}",
+            log.debug("InvoicePaymentStartedCreated has {} been saved: eventId={}, invoiceId={}",
                     id == null ? "NOT" : "", event.getEventId(), event.getSourceId());
         } catch (DaoException ex) {
             throw new StorageException(ex);

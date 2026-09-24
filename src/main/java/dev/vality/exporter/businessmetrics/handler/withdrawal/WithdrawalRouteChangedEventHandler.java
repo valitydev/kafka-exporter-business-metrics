@@ -29,7 +29,7 @@ public class WithdrawalRouteChangedEventHandler implements WithdrawalEventHandle
     @Override
     public void handle(TimestampedChange change, MachineEvent event) {
         try {
-            log.info("Trying to handle WithdrawalRouteChanged: eventId={}, withdrawalId={}", event.getEventId(),
+            log.debug("Trying to handle WithdrawalRouteChanged: eventId={}, withdrawalId={}", event.getEventId(),
                     event.getSourceId());
             WithdrawalData withdrawalData = withdrawalDao.get(event.getSourceId());
             if (withdrawalData == null) {
@@ -42,7 +42,7 @@ public class WithdrawalRouteChangedEventHandler implements WithdrawalEventHandle
                 withdrawalData.setTerminalId(route.getTerminalId());
             }
             Long id = withdrawalDao.save(withdrawalData);
-            log.info("WithdrawalRouteChanged has {} been saved: eventId={}, withdrawalId={}",
+            log.debug("WithdrawalRouteChanged has {} been saved: eventId={}, withdrawalId={}",
                     id == null ? "NOT" : "", event.getEventId(), event.getSourceId());
         } catch (DaoException ex) {
             throw new StorageException(ex);
